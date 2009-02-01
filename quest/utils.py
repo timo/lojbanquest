@@ -7,11 +7,12 @@ import random
 
 def makeWorldGraph():
     out = open("world.dot", "w")
-    out.write("""digraph "Tersistu'as" {\n  graph [overlap=prism]\n  node [shape=box fontsize=10]\n""")
+    out.write("""graph "Tersistu'as" {\n  graph [overlap=prism]\n  node [shape=box fontsize=10]\n""")
 
     for room in Room.query.order_by(Room.name):
-        for other in doorlist:
-            out.write("""  "%s" -> "%s"\n""" % (room.name, other.name))
+        for other in room.doors:
+            if other.name < room.name:
+                out.write("""  "%s" -- "%s"\n""" % (room.name, other.name))
 
     out.write("""}""")
 
@@ -211,8 +212,10 @@ def populate_db():
             adjacentrooms = Room.query.filter(cmavoStep(theroom.name))
 
         for other in adjacentrooms:
-            theroom.doors.append(other)
-            other.doors.append(theroom)
+            if other not in theroom.doors:
+                theroom.doors.append(other)
+            if theroom not in other.doors:
+                other.doors.append(theroom)
 
     print
     print
@@ -228,12 +231,12 @@ def populate_db():
         if num > 4:
             rooms = []
             for other in theroom.doors:
-                rooms.append(other * weight(len(other.doors)))
+                rooms.append([other] * weight(len(other.doors)))
 
             random.shuffle(rooms)
             # play russian roulette
             kills = set()
-            while len(kills) < num - 4:
+            while len(kills) < num - 4 and rooms:
                 kills = kills | set(rooms.pop())
 
             print "killing %s from %s - had %i" % (", ".join([k.name for k in kills]), theroom.name, len(theroom.doors))

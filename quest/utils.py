@@ -18,6 +18,8 @@ def makeWorldGraph():
 
     for room in Room.query.order_by(Room.name):
         if len(room.name) == 5: continue
+        if len(room.doors) == 0:
+            out.write('    "%s"' % room.name)
         for other in room.doors:
             if other.name < room.name:
                 out.write("""    "%s" -- "%s"\n""" % (room.name, other.name))
@@ -28,6 +30,8 @@ def makeWorldGraph():
 
     for room in Room.query.order_by(Room.name):
         if len(room.name) != 5: continue
+        if len(room.doors) == 0:
+            out.write('    "%s"' % room.name)
         for other in room.doors:
             if other.name < room.name:
                 out.write("""    "%s" -- "%s"\n""" % (room.name, other.name))
@@ -245,7 +249,7 @@ def populate_db():
 
     weight = lambda num: max((9 - num) ** 2, 1)
 
-    maxdoornum = 5
+    maxdoornum = 4
 
     for theroom in Room.query.order_by(Room.name):
         num = len(theroom.doors)

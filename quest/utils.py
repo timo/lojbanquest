@@ -7,13 +7,11 @@ import random
 
 def makeWorldGraph():
     out = open("world.dot", "w")
-    out.write("""graph "Tersistu'as" {\n  graph [overlap=prism]\n  node [shape=box]\n""")
+    out.write("""digraph "Tersistu'as" {\n  graph [overlap=prism]\n  node [shape=box fontsize=10]\n""")
 
     for room in Room.query.order_by(Room.name):
-        if len(room.doors) > 4:
-            continue
-        for other in room.doors:
-            out.write("""  "%s" -- "%s"\n""" % (room.name, other.name))
+        for other in doorlist:
+            out.write("""  "%s" -> "%s"\n""" % (room.name, other.name))
 
     out.write("""}""")
 
@@ -31,7 +29,7 @@ def cmavoStep(name):
              u'c': u'j', u'j': u'c',
              u's': u'z', u'z': u's'}
 
-    isstep = lambda seq, x, y: seq.index(x) - seq.index(y) == -1
+    isstep = lambda seq, x, y: seq.index(x) - seq.index(y) in [-1, 1]
 
     addapore = re.compile("^([bcdfgjklmnoprstuvxz]?[aeiouy])([aeiouy])$")
 
@@ -207,19 +205,41 @@ def populate_db():
 
 
         if WordCard.query.filter(WordCard.word == theroom.name).one().selmaho.selmaho == "GISMU":
-            adjacentrooms = Room.query.filter(likeLevenOne(theroom.name))
-            dungeondoor = Room.query.filter(Room.name.in_(rafsi))
-            l = list(adjacentrooms)
-            random.shuffle(l)
-            l = l[:random.choice([3, 4])]
-            if dungeondoor.first():
-                l.append(dungeondoor.first())
+            adjacentrooms = Room.query.filter(or_(likeLevenOne(theroom.name),
+                                                  Room.name.in_(rafsi)))
         else:
             adjacentrooms = Room.query.filter(cmavoStep(theroom.name))
-            l = list(adjacentrooms)
 
-        for other in l:
+        for other in adjacentrooms:
             theroom.doors.append(other)
             other.doors.append(theroom)
+
+    print
+    print
+    print "Fourth step: cutting down on the number of doors."
+    print
+
+    num = 0
+
+    weight = lambda num: max((9 - num) ** 2, 1)
+
+    for theroom in Room.query.order_by(Room.name):
+        num = len(theroom.doors)
+        if num > 4:
+            rooms = []
+            for other in theroom.doors:
+                rooms.append(other * weight(len(other.doors)))
+
+            random.shuffle(rooms)
+            # play russian roulette
+            kills = set()
+            while len(kills) < num - 4:
+                kills = kills | set(rooms.pop())
+
+            print "killing %s from %s - had %i" % (", ".join([k.name for k in kills]), theroom.name, len(theroom.doors))
+
+            for k in kills:
+                k.doors.remove(theroom)
+                theroom.doors.remove(k)
 
     makeWorldGraph()

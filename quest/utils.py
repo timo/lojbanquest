@@ -7,14 +7,33 @@ import random
 
 def makeWorldGraph():
     out = open("world.dot", "w")
-    out.write("""graph "Tersistu'as" {\n  graph [overlap=prism]\n  node [shape=box fontsize=10]\n""")
+    out.write("""graph "Tersistu'as" {
+  graph [overlap=true]
+  node [shape=none fontsize=10]
+  edge [color=grey]
+""")
+
+    out.write("""  subgraph "cmavo" {
+    node [fontcolor=blue]\n""")
 
     for room in Room.query.order_by(Room.name):
+        if len(room.name) == 5: continue
         for other in room.doors:
             if other.name < room.name:
-                out.write("""  "%s" -- "%s"\n""" % (room.name, other.name))
+                out.write("""    "%s" -- "%s"\n""" % (room.name, other.name))
 
-    out.write("""}""")
+    out.write("""}
+  subgraph "gismu" {
+    node [fontcolor=red]\n""")
+
+    for room in Room.query.order_by(Room.name):
+        if len(room.name) != 5: continue
+        for other in room.doors:
+            if other.name < room.name:
+                out.write("""    "%s" -- "%s"\n""" % (room.name, other.name))
+
+    out.write("""  }\n
+}""")
 
 def likeLevenOne(name):
     return and_(or_(*(Room.name.like("%s_%s" % (name[:i], name[i+1:])) for i in range(len(name)))),
@@ -226,20 +245,22 @@ def populate_db():
 
     weight = lambda num: max((9 - num) ** 2, 1)
 
+    maxdoornum = 5
+
     for theroom in Room.query.order_by(Room.name):
         num = len(theroom.doors)
-        if num > 4:
+        if num > maxdoornum:
             rooms = []
             for other in theroom.doors:
-                rooms.append([other] * weight(len(other.doors)))
+                # never kick gismu -> cmavo doors
+                if (len(other.name) == 5) == (len(theroom.name) == 5):
+                    rooms.append([other] * weight(len(other.doors)))
 
             random.shuffle(rooms)
             # play russian roulette
             kills = set()
-            while len(kills) < num - 4 and rooms:
+            while len(kills) < num - maxdoornum and rooms:
                 kills = kills | set(rooms.pop())
-
-            print "killing %s from %s - had %i" % (", ".join([k.name for k in kills]), theroom.name, len(theroom.doors))
 
             for k in kills:
                 k.doors.remove(theroom)

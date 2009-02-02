@@ -5,6 +5,8 @@ from sqlalchemy import or_, and_
 import sqlalchemy.orm.exc 
 import random
 
+roomseed = "pinka"
+
 def makeWorldGraph():
     out = open("world.dot", "w")
     out.write("""graph "Tersistu'as" {
@@ -98,11 +100,7 @@ def cmavoStep(name):
     return and_(or_(*(Room.name == other for other in others)),
                 Room.name != name)
 
-def populate_db():
-    defire = re.compile("(.*?);")
-    print "will now populate the database."
-
-    print "First step: valsi"
+def populate_valsi():
     print "loading wordlists"
     print
 
@@ -196,11 +194,7 @@ def populate_db():
             wc.rafsi = rafsi
             session.add(wc)
 
-    print
-    print
-    print "Second step: rooms."
-    print
-
+def make_rooms():
     num = 0
     count = WordCard.query.count()
 
@@ -210,12 +204,8 @@ def populate_db():
 
         room = Room()
         room.name = gismu.word
-    
-    print
-    print
-    print "Third step: connecting rooms."
-    print
 
+def connect_rooms():
     num = 0
 
     for theroom in Room.query.order_by(Room.name):
@@ -228,7 +218,8 @@ def populate_db():
         # is this a gismu or is this a rafsi?
 
 
-        if WordCard.query.filter(WordCard.word == theroom.name).one().selmaho.selmaho == "GISMU":
+        #if WordCard.query.filter(WordCard.word == theroom.name).one().selmaho.selmaho == "GISMU":
+        if len(theroom.name) == 5:
             adjacentrooms = Room.query.filter(or_(likeLevenOne(theroom.name),
                                                   Room.name.in_(rafsi)))
         else:
@@ -240,20 +231,34 @@ def populate_db():
             if theroom not in other.doors:
                 other.doors.append(theroom)
 
-    print
-    print
-    print "Fourth step: cutting down on the number of doors."
-    print
+def prune_rooms(roomseeds):
+    known = []
+    look_at = [Room.get_by(name = roomseed) for roomseed in roomseeds]
 
-    num = 0
+    while len(look_at) > 0:
+        ther = look_at.pop()
+        for other in ther.doors:
+            if other not in known:
+                look_at.append(other)
 
-    weight = lambda num: max((9 - num) ** 2, 1)
-
-    maxdoornum = 4
+        known.append(ther)
 
     for theroom in Room.query.order_by(Room.name):
-        num = len(theroom.doors)
-        if num > maxdoornum:
+        if theroom not in known:
+            session.delete(theroom)
+
+def cut_doors(maxdoornum):
+    weight = lambda num: max((9 - num) ** 2, 1)
+
+    count = len(known)
+
+    for theroom in Room.query.order_by(Room.name):
+        num += 1
+        dnum = len(theroom.doors)
+        
+        print "\r(% 5i/% 5i) %s (%i)      " % (num, count, theroom.name, dnum),
+
+        if dnum > maxdoornum:
             rooms = []
             for other in theroom.doors:
                 # never kick gismu -> cmavo doors
@@ -263,11 +268,51 @@ def populate_db():
             random.shuffle(rooms)
             # play russian roulette
             kills = set()
-            while len(kills) < num - maxdoornum and rooms:
+            while len(kills) < dnum - maxdoornum and rooms:
                 kills = kills | set(rooms.pop())
 
             for k in kills:
                 k.doors.remove(theroom)
                 theroom.doors.remove(k)
 
+def generate_world():
+    print "Creating rooms from WordCards..."
+    print
+
+    make_rooms()
+
+    print
+    print
+    print "Connecting rooms."
+    print
+
+    connect_rooms()
+
+    print
+    print
+    print "Seeding island from '%s'." % (roomseed, )
+    print
+
+    prune_rooms([roomseed])
+
+    maxdoornum = 5
+    print
+    print
+    print "Cut number of doors down to %i per room..." % maxdoornum
+    print
+
+    cut_doors(maxdoornum)
+
+    print
+    print "Generating graphviz file."
+    print
+
     makeWorldGraph()
+
+def populate_db():
+    defire = re.compile("(.*?);")
+    print "will now populate the database."
+
+    print "First step: valsi"
+    populate_valsi()
+

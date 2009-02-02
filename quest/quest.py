@@ -1,42 +1,87 @@
 from __future__ import with_statement
 
 import os
-from nagare import presentation
+from nagare import presentation, component, state
+from nagare.namespaces import xhtml
+
+from nagare.var import Var
+
+import models
+import random
+
+
+
+
+    return h.root
+
+class Wordbag(object):
+    def __init__(self):
+        self.diceWords()
+
+    def diceWords(self):
+        self.words = {}
+
+        words = list(models.WordCard.query.order_by(models.WordCard.word))
+        sum = 0
+        while sum < 100:
+            num = random.randint(1, 10)
+            self.words[random.choice(words)] = num
+            sum += num
+
+    def useWord(self, wo):
+        wc = [wrd for wrd in self.words if wrd.word == wo][0]
+        self.words[wc] -= 1
+        if self.words[wc] == 0:
+            del self.words[wc]
+
+class Player(object):
+    def __init__(self, name = "la timos"):
+        self.name = name
+        self.hp = 100
+        self.wordbag = state.stateless(Wordbag())
+
+    def changeHp(self, offset):
+        self.hp += offset
+
+@presentation.render_for(Player)
+def player_render(self, h, binding, *args):
+    with h.div(class_ = "playerbox"):
+        h << h.h1(self.name)
+        with h.span():
+           h << "You currently have "
+           h << h.span(self.hp, id="hp")
+           h << " health points."
+           h << h.a("--").action(lambda: self.changeHp(-1))
+           h << h.a("++").action(lambda: self.changeHp(+1))
+
+    return h.root
+
+@presentation.render_for(Player, model="wordbag")
+def wordbag_render(self, h, binding, *args):
+    if len(self.wordbag.words) > 0:
+        with h.div(class_="wordbag"):
+            h << {"style": "-moz-column-count:5;" }
+            h << h.a("re-fill bag.").action(self.wordbag.diceWords)
+            with h.ul():
+                for wo, ct in self.wordbag.words.iteritems():
+                    with h.li():
+                        h << h.span(ct, class_="count")
+                        h << h.a(" " + wo.word).action(lambda wo=wo: self.wordbag.useWord(wo.word))
+    else:
+        with h.div(class_="wordbag"):
+            h << "Woops. No words :("
+    
+    return h.root
 
 class Quest(object):
-    pass
+    def __init__(self):
+        self.playerBox = component.Component(Player("la timos"))
 
 @presentation.render_for(Quest)
 def render(self, h, *args):
-    this_file = __file__
-    if this_file.endswith('.pyc'):
-        this_file = __file__[:-1]
-
-    models_file = os.path.join(os.path.dirname(__file__), 'models.py')
-
-    h.head.css_url('/static/nagare/application.css')
-    h.head << h.head.title('Up and Running !')
-
-    with h.div(class_='mybody'):
-        with h.div(id='myheader'):
-            h << h.a(h.img(src='/static/nagare/img/logo.gif'), id='logo', href='http://www.nagare.org/', title='Nagare home')
-            h << h.span('Congratulations !', id='title')
-
-        with h.div(id='main'):
-            h << h.h1('Your application is running')
-
-            with h.p:
-                h << 'You can now:'
-                with h.ul:
-                    h << h.li('If your application uses a database, add your database entities into ', h.i(models_file))
-                    h << h.li('Add your application components into ', h.i(this_file), ' or create new files')
-
-            h << h.p('To lean more, go to the ', h.a('official website', href='http://www.nagare.org/'))
-
-            h << "Have fun !"
-
-    h << h.div(class_='footer')
-
+    h << h.h1("Welcome to LojbanQuest!")
+    h << self.playerBox.render(xhtml.AsyncRenderer(h))
+    h << self.playerBox.render(xhtml.AsyncRenderer(h), model="wordbag")
     return h.root
 
 # ---------------------------------------------------------------

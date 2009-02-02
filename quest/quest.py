@@ -9,8 +9,30 @@ from nagare.var import Var
 import models
 import random
 
+class Monster(object):
+    def __init__(self):
+        self.hp = 100
+        self.name = "Slime of Ambiguity"
 
+@presentation.render_for(Monster)
+def monster_render(self, h, binding, *args):
+    with h.div(class_="monster"):
+        h << self.name
+        h << h.br()
+        h << h.span("%i hp" % self.hp, class_="hp")
+    return h.root
 
+class Monsters(object):
+    def __init__(self):
+        self.monsters = []
+
+    def addMonster(self, monster):
+        self.monsters.append(monster)
+
+@presentation.render_for(Monsters)
+def monsters_render(self, h, binding, *args):
+    for mon in self.monsters:
+        h << mon
 
     return h.root
 
@@ -76,12 +98,16 @@ def wordbag_render(self, h, binding, *args):
 class Quest(object):
     def __init__(self):
         self.playerBox = component.Component(Player("la timos"))
+        self.monsters = Monsters()
+        self.monsters.addMonster(component.Component(Monster()))
+        self.monstersC = component.Component(self.monsters)
 
 @presentation.render_for(Quest)
 def render(self, h, *args):
     h << h.h1("Welcome to LojbanQuest!")
     h << self.playerBox.render(xhtml.AsyncRenderer(h))
     h << self.playerBox.render(xhtml.AsyncRenderer(h), model="wordbag")
+    h << self.monstersC
     return h.root
 
 # ---------------------------------------------------------------

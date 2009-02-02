@@ -103,6 +103,7 @@ class Quest(object):
 
 @presentation.render_for(Quest)
 def render(self, h, *args):
+    h.head << h.head.title("LojbanQuest draft")
     h << h.h1("Welcome to LojbanQuest!")
     h << self.playerBox.render(xhtml.AsyncRenderer(h))
     h << self.playerBox.render(xhtml.AsyncRenderer(h), model="wordbag")

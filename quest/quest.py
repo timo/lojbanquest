@@ -98,16 +98,15 @@ def wordbag_render(self, h, binding, *args):
 class Quest(object):
     def __init__(self):
         self.playerBox = component.Component(Player("la timos"))
-        self.monsters = Monsters()
-        self.monsters.addMonster(component.Component(Monster()))
-        self.monstersC = component.Component(self.monsters)
+        self.monsters = component.Component(Monsters())
+        self.monsters.o.addMonster(component.Component(Monster()))
 
 @presentation.render_for(Quest)
 def render(self, h, *args):
     h << h.h1("Welcome to LojbanQuest!")
     h << self.playerBox.render(xhtml.AsyncRenderer(h))
     h << self.playerBox.render(xhtml.AsyncRenderer(h), model="wordbag")
-    h << self.monstersC
+    h << self.monsters
     return h.root
 
 # ---------------------------------------------------------------

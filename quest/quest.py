@@ -9,10 +9,40 @@ from nagare.var import Var
 import models
 import random
 
-class Monster(object):
+class GameSession(object):
+    """This class stores lots of session-related data that all components
+    may want to access."""
     def __init__(self):
+        pass
+
+class RoomDisplay(object):
+    """This class encapsulates many Components that build up the GUI that
+    the player uses to 'see' a room and status stuff."""
+    def __init__(self, roomname, gs):
+        self.gs = gs
+        self.enterRoom(roomname)
+
+    def enterRoom(self, roomname):
+        self.room = roomname
+        self.monsters = component.Component(Monsters(self.gs)) # TODO: read monsters from the DB
+        self.monsters.o.addMonster(component.Component(Monster(self.gs)))
+
+@presentation.render_for(RoomDisplay)
+def roomdisplay_render(self, h, binding, *args):
+    room = models.Room.query.get(self.room)
+    h << h.p("You are in ", h.span(room.name, id="roomname"))
+    h << self.monsters
+    with h.div():
+        h << "Doors:"
+        with h.ul():
+            h << (h.li(other.name) for other in room.doors)
+
+    return h.root
+
+class Monster(object):
+    def __init__(self, gs):
         self.hp = 100
-        self.name = "Slime of Ambiguity"
+        self.name = "Slime of Vagueness"
 
 @presentation.render_for(Monster)
 def monster_render(self, h, binding, *args):
@@ -23,7 +53,9 @@ def monster_render(self, h, binding, *args):
     return h.root
 
 class Monsters(object):
-    def __init__(self):
+    """This Component holds all Monsters in the room and allows the player
+    to select a Monster to attack."""
+    def __init__(self, gs):
         self.monsters = []
 
     def addMonster(self, monster):
@@ -37,7 +69,8 @@ def monsters_render(self, h, binding, *args):
     return h.root
 
 class Wordbag(object):
-    def __init__(self):
+    """This class holds the words that the player posesses."""
+    def __init__(self, gs):
         self.diceWords()
 
     def diceWords(self):
@@ -57,10 +90,11 @@ class Wordbag(object):
             del self.words[wc]
 
 class Player(object):
-    def __init__(self, name = "la timos"):
+    """This Component represents the player of the game."""
+    def __init__(self, name, gs):
         self.name = name
         self.hp = 100
-        self.wordbag = state.stateless(Wordbag())
+        self.wordbag = state.stateless(Wordbag(gs))
 
     def changeHp(self, offset):
         self.hp += offset
@@ -97,9 +131,12 @@ def wordbag_render(self, h, binding, *args):
 
 class Quest(object):
     def __init__(self):
-        self.playerBox = component.Component(Player("la timos"))
-        self.monsters = component.Component(Monsters())
-        self.monsters.o.addMonster(component.Component(Monster()))
+        self.gs = GameSession()
+        
+        self.playerBox = component.Component(Player("la timos", self.gs))
+        self.roomDisplay = component.Component(RoomDisplay("pinka", self.gs))
+        
+        self.gs.player = self.playerBox.o
 
 @presentation.render_for(Quest)
 def render(self, h, *args):
@@ -107,7 +144,7 @@ def render(self, h, *args):
     h << h.h1("Welcome to LojbanQuest!")
     h << self.playerBox.render(xhtml.AsyncRenderer(h))
     h << self.playerBox.render(xhtml.AsyncRenderer(h), model="wordbag")
-    h << self.monsters
+    h << self.roomDisplay
     return h.root
 
 # ---------------------------------------------------------------

@@ -32,6 +32,13 @@ class Player(Entity):
     def __repr__(self):
         return u'<Player "%s" (%sline)>' % (self.username, [u"On", u"Off"][self.status])
 
+class Monster(Entity):
+    name = Field(Unicode(64))
+
+    health = Field(Integer, default = 100)
+
+    position = ManyToOne(Room)
+
 ### things for the treasure chest game and combat
 
 class HumanSentence(Entity):

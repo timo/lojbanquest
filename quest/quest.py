@@ -1,29 +1,44 @@
 from __future__ import with_statement
 
 import os
-from nagare import presentation, component, state
+from nagare import presentation, component, state, var
 from nagare.namespaces import xhtml
-
-from nagare.var import Var
 
 import models
 import random
 
 class GameSession(object):
-    """This class stores lots of session-related data that all components
-    may want to access."""
-    def __init__(self):
-        pass
+    def __init__(self, player):
+        self.player = player
+
+        self.playerBox = component.Component(Player(player, self))
+        self.roomDisplay = component.Component(RoomDisplay(player.position, self))
+
+        self.gs.player = self.playerBox.o
+
+@presentation.render_for(GameSession)
+def render(self, h, *args):
+    h.head << h.head.title("LojbanQuest draft")
+    h << h.h1("Welcome to LojbanQuest!")
+    h << self.playerBox.render(xhtml.AsyncRenderer(h))
+    h << self.playerBox.render(xhtml.AsyncRenderer(h), model="wordbag")
+    h << self.roomDisplay
+    return h.root
 
 class RoomDisplay(object):
     """This class encapsulates many Components that build up the GUI that
     the player uses to 'see' a room and status stuff."""
-    def __init__(self, roomname, gs):
+    def __init__(self, room, gs):
         self.gs = gs
-        self.enterRoom(roomname)
+        self.enterRoom(room)
 
-    def enterRoom(self, roomname):
-        self.room = roomname
+    def enterRoom(self, room):
+        if isinstance(room, Room):
+            self.room = room
+        else:
+            self.room = Room.query.get(room)
+
+
         self.monsters = component.Component(Monsters(self.gs)) # TODO: read monsters from the DB
         self.monsters.o.addMonster(component.Component(Monster(self.gs)))
 
@@ -129,24 +144,39 @@ def wordbag_render(self, h, binding, *args):
     
     return h.root
 
-class Quest(object):
+class QuestLogin(object):
     def __init__(self):
-        self.gs = GameSession()
-        
-        self.playerBox = component.Component(Player("la timos", self.gs))
-        self.roomDisplay = component.Component(RoomDisplay("pinka", self.gs))
-        
-        self.gs.player = self.playerBox.o
+        self.message = state.stateless(var.Var(""))
 
-@presentation.render_for(Quest)
-def render(self, h, *args):
-    h.head << h.head.title("LojbanQuest draft")
-    h << h.h1("Welcome to LojbanQuest!")
-    h << self.playerBox.render(xhtml.AsyncRenderer(h))
-    h << self.playerBox.render(xhtml.AsyncRenderer(h), model="wordbag")
-    h << self.roomDisplay
-    return h.root
+    def login(self, username, password):
+        self.becomes(
+
+    def register(self, username, password):
+        # see if there are duplicate players.
+        if Player.query.filter(username = username).count() > 0:
+            self.message("A player with that username already exists.")
+            return
+
+        np = Player(username = username, password = password)
+        np.position = Room.query.get("kalsa")
+        session.add(np)
+        self.login(username, password)
+
+
+@presentation.render_for(QuestLogin)
+def login_form(self, h, binding, *args):
+    un = var.Var()
+    pwd = var.Var()
+    return h.form("Please sign in with your username and password or register a new account.",
+                  h.br(),
+                  self.message(),
+                  h.br(),
+                  h.input.action(un),
+                  h.input.action(pwd),
+                  h.input(type="submit", value="login").action(lambda: self.login(un, pwd)),
+                  h.input(type="submit", value="register").action(lambda: self.register(un, pwd))
+                  )
 
 # ---------------------------------------------------------------
 
-app = Quest
+app = QuestLogin

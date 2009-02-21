@@ -4,17 +4,17 @@ import os
 from nagare import presentation, component, state, var
 from nagare.namespaces import xhtml
 
+from elixir import *
+
 import models
 import random
 
 class GameSession(object):
     def __init__(self, player):
-        self.player = player
+        self.player = player.name
 
-        self.playerBox = component.Component(Player(player, self))
-        self.roomDisplay = component.Component(RoomDisplay(player.position, self))
-
-        self.gs.player = self.playerBox.o
+        self.playerBox = component.Component(Player(player.name, self))
+        self.roomDisplay = component.Component(RoomDisplay(player.position.name, self))
 
 @presentation.render_for(GameSession)
 def render(self, h, *args):
@@ -33,10 +33,10 @@ class RoomDisplay(object):
         self.enterRoom(room)
 
     def enterRoom(self, room):
-        if isinstance(room, Room):
+        if isinstance(room, models.Room):
             self.room = room
         else:
-            self.room = Room.query.get(room)
+            self.room = models.Room.query.get(room)
 
 
         self.monsters = component.Component(Monsters(self.gs)) # TODO: read monsters from the DB
@@ -149,16 +149,23 @@ class QuestLogin(object):
         self.message = state.stateless(var.Var(""))
 
     def login(self, username, password):
-        self.becomes(
+        po = models.Player.query.get(username())
+        if not po:
+            self.message("No such user. Try registering instead.")
+        elif po.password != password():
+            self.message("Login failed.")
+        else:
+            self.becomes(GameSession(username()))
+         
 
     def register(self, username, password):
         # see if there are duplicate players.
-        if Player.query.filter(username = username).count() > 0:
+        if models.Player.query.get(username()):
             self.message("A player with that username already exists.")
             return
 
-        np = Player(username = username, password = password)
-        np.position = Room.query.get("kalsa")
+        np = models.Player(username = username(), password = password())
+        np.position = models.Room.query.get("kalsa")
         session.add(np)
         self.login(username, password)
 
@@ -179,4 +186,4 @@ def login_form(self, h, binding, *args):
 
 # ---------------------------------------------------------------
 
-app = QuestLogin
+app = component.Component(QuestLogin())

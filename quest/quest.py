@@ -10,19 +10,30 @@ import models
 import random
 
 class GameSession(object):
-    def __init__(self, player):
-        self.player = player.name
+    def __init__(self):
+        self.loginManager = component.Component(QuestLogin())
+        self.loginManager.on_answer(self.startGame)
+        self.model = state.stateless(var.Var("login"))
 
-        self.playerBox = component.Component(Player(player.name, self))
-        self.roomDisplay = component.Component(RoomDisplay(player.position.name, self))
+    def startGame(self, player):
+        plo = models.Player.get(player)
+        self.player = player
+
+        self.playerBox = component.Component(Player(player, self))
+        self.roomDisplay = component.Component(RoomDisplay(plo.position.name, self))
+
+        self.model("game")
 
 @presentation.render_for(GameSession)
 def render(self, h, *args):
     h.head << h.head.title("LojbanQuest draft")
-    h << h.h1("Welcome to LojbanQuest!")
-    h << self.playerBox.render(xhtml.AsyncRenderer(h))
-    h << self.playerBox.render(xhtml.AsyncRenderer(h), model="wordbag")
-    h << self.roomDisplay
+    if self.model() == "login":
+        h << self.loginManager
+    elif self.model() == "game":
+        h << h.h1("Welcome to LojbanQuest!")
+        h << self.playerBox.render(xhtml.AsyncRenderer(h))
+        h << self.playerBox.render(xhtml.AsyncRenderer(h), model="wordbag")
+        h << self.roomDisplay
     return h.root
 
 class RoomDisplay(object):
@@ -34,12 +45,12 @@ class RoomDisplay(object):
 
     def enterRoom(self, room):
         if isinstance(room, models.Room):
-            self.room = room
+            raise ProgrammingError("Do not call RoomDisplay.enterRoom with a Room instance.")
+            self.room = room.name
         else:
-            self.room = models.Room.query.get(room)
+            self.room = room
 
-
-        self.monsters = component.Component(Monsters(self.gs)) # TODO: read monsters from the DB
+        self.monsters = component.Component(Monsters(self.gs))
         self.monsters.o.addMonster(component.Component(Monster(self.gs)))
 
 @presentation.render_for(RoomDisplay)
@@ -148,17 +159,17 @@ class QuestLogin(object):
     def __init__(self):
         self.message = state.stateless(var.Var(""))
 
-    def login(self, username, password):
+    def login(self, username, password, binding):
         po = models.Player.query.get(username())
         if not po:
             self.message("No such user. Try registering instead.")
         elif po.password != password():
             self.message("Login failed.")
         else:
-            self.becomes(GameSession(username()))
+            binding.answer(username())
          
 
-    def register(self, username, password):
+    def register(self, username, password, binding):
         # see if there are duplicate players.
         if models.Player.query.get(username()):
             self.message("A player with that username already exists.")
@@ -167,7 +178,7 @@ class QuestLogin(object):
         np = models.Player(username = username(), password = password())
         np.position = models.Room.query.get("kalsa")
         session.add(np)
-        self.login(username, password)
+        self.login(username, password, binding)
 
 
 @presentation.render_for(QuestLogin)
@@ -180,10 +191,10 @@ def login_form(self, h, binding, *args):
                   h.br(),
                   h.input.action(un),
                   h.input.action(pwd),
-                  h.input(type="submit", value="login").action(lambda: self.login(un, pwd)),
-                  h.input(type="submit", value="register").action(lambda: self.register(un, pwd))
+                  h.input(type="submit", value="login").action(lambda: self.login(un, pwd, binding)),
+                  h.input(type="submit", value="register").action(lambda: self.register(un, pwd, binding))
                   )
 
 # ---------------------------------------------------------------
 
-app = component.Component(QuestLogin())
+app = GameSession

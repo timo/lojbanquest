@@ -106,7 +106,10 @@ def populate_valsi():
 
     print "gismu and rafsi-cmavo:"
 
-    lines = open("gismu.txt").readlines()[1:]
+    try:
+        lines = open("data/gismu.txt").readlines()[1:]
+    except:
+        lines = open("../data/gismu.txt").readlines()[1:]
 
     num = 0
     count = len(lines)
@@ -158,7 +161,10 @@ def populate_valsi():
     print "rafsi-less cmavo and selma'o of rafsi-cmavo"
     print
 
-    lines = open("cmavo.txt").readlines()[1:]
+    try:
+        lines = open("data/cmavo.txt").readlines()[1:]
+    except:
+        lines = open("../data/cmavo.txt").readlines()[1:]
 
     count= len(lines)
     num = 0

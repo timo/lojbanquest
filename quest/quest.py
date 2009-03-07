@@ -31,8 +31,8 @@ def render(self, h, *args):
         h << self.loginManager
     elif self.model() == "game":
         h << h.h1("Welcome to LojbanQuest!")
-        h << self.playerBox.render(xhtml.AsyncRenderer(h))
-        h << self.playerBox.render(xhtml.AsyncRenderer(h), model="wordbag")
+        h << self.playerBox
+        h << self.playerBox.render(h, model="wordbag")
         h << self.roomDisplay
     return h.root
 
@@ -176,8 +176,9 @@ class QuestLogin(object):
             return
 
         np = models.Player(username = username(), password = password())
-        np.position = models.Room.query.get("kalsa")
+        np.position = models.Room.query.get(u"kalsa")
         session.add(np)
+        session.flush()
         self.login(username, password, binding)
 
 

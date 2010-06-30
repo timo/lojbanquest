@@ -415,3 +415,75 @@ def populate_db():
     print "Second step: the world"
     generate_world()
 
+    print "third step: find some cities"
+    cities = []
+    randrms = random_rooms()
+    while len(cities) < 50:
+        room = randrms.next()
+        if len(room.name) == 5:
+            cities.append((room.name, find_city(room.name)))
+            print "found cities for room %s" % room.name
+
+    cities.sort(key=lambda c: len(c[1]))
+    print "\n".join(["%d - %s" % (len(c[1]), c[0]) for c in cities])
+
+def random_rooms():
+    num = Room.query.count()
+    nums = range(num)
+    random.shuffle(nums)
+    for num in nums:
+        yield Room.query.offset(num).first()
+
+class CityCrawler(object):
+    def __init__(self, startroom):
+        self.visitedrooms = [Room.get_by(name=startroom)]
+
+    def crawl(self):
+        self.step_one()
+        self.step_one()
+        while self.add_rooms() > 0:
+            self.follow_corridors()
+            print "adding another layer"
+            print "rooms in it: %r" % ([r.name for r in self.visitedrooms],)
+        return self.visitedrooms
+
+    def step_one(self):
+        additions = []
+        for room in self.visitedrooms:
+            for croom in room.doors:
+                if croom not in additions and croom not in self.visitedrooms:
+                    additions.append(croom)
+        self.visitedrooms.extend(additions)
+        print "step one done. rooms in it: %r" % ([r.name for r in self.visitedrooms],)
+        self.follow_corridors()
+
+    def follow_corridors(self):
+        for room in self.visitedrooms:
+            if len(room.doors) == 1:
+                if room.doors[0] not in self.visitedrooms:
+                    self.visitedrooms.append(room.doors[0])
+
+    def add_rooms(self, minter=2): # "minimum interconnections"
+        rooms_added = 0
+        for vroom in self.visitedrooms:
+            others = vroom.doors
+            looked_at = 0
+            for o in others:
+                if o in self.visitedrooms:
+                    continue
+                if len(o.name) != 5:
+                    continue
+                looked_at += 1
+                cons = sum([int(otr in self.visitedrooms) for otr in o.doors])
+                if cons >= minter:
+                    self.visitedrooms.append(o)
+                    rooms_added += 1
+
+        print "returning ", rooms_added
+        return rooms_added
+
+def find_city(startroom = "pinka"):
+    crawler = CityCrawler(startroom)
+    rooms = crawler.crawl()
+    makeWorldGraph(startroom + ".dot", rooms)
+    return rooms

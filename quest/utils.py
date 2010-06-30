@@ -5,7 +5,7 @@ from sqlalchemy import or_, and_
 import sqlalchemy.orm.exc 
 import random
 
-roomseed = "pinka"
+roomseed = u"pinka"
 
 def makeWorldGraph():
     out = open("world.dot", "w")

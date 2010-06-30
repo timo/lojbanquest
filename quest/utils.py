@@ -61,6 +61,29 @@ def likeLevenOne(name):
     return and_(or_(*(Room.name.like("%s_%s" % (name[:i], name[i+1:])) for i in range(len(name)))),
                 Room.name != name)
 
+l2p = ["__cde", "_b_de", "_bc_e", "_bcd_",
+       "a__de", "a_c_e", "a_cd_",
+       "ab__e", "ab_d_",
+       "abc__"]
+
+def makeLeven2Poss():
+    global l2p
+    np = []
+    for p in l2p:
+        s = ""
+        for c in p:
+            if c != "_":
+                s += "%(" + c + ")s"
+            else:
+                s += "_"
+        np.append(s)
+    l2p = np
+
+makeLeven2Poss()
+
+def likeLevenTwo(name):
+    return and_(or_(*(Room.name.like(a % dict(zip("abcde", name))) for a in l2p)))
+
 def cmavoStep(name):
     seq1 = list("uieaoui")
     seq2 = [list(x) for x in ["xptfsckxp", "gbdvzjgb", "nmn", "rlr"]]
@@ -257,6 +280,33 @@ def connect_rooms():
             if theroom not in other.doors:
                 other.doors.append(theroom)
 
+def connect_other_continent(rooms):
+    print
+    print "making other continent"
+    print
+
+    count = len(rooms)
+
+    num = 0
+    for theroom in rooms:
+        if len(theroom.name) != 5:
+            continue
+        
+        if num % 10 == 0: # only every 10th one.
+            print "\r(% 5i/% 5i) %s                               " % (num, count, theroom.name),
+        
+        adjacentrooms = Room.query.filter(likeLevenTwo(theroom.name))
+        
+        for other in adjacentrooms:
+            if other not in rooms: continue # only intracontinental connections allowed
+            if other not in theroom.doors:
+                theroom.doors.append(other)
+            if theroom not in other.doors:
+                other.doors.append(theroom)
+
+        num += 1
+    print "other continent has %d rooms." % num
+
 known = []
 def prune_rooms(roomseeds):
     global known
@@ -270,9 +320,13 @@ def prune_rooms(roomseeds):
 
         known.append(ther)
 
+    toprune = []
+
     for theroom in Room.query.order_by(Room.name):
         if theroom not in known:
-            session.delete(theroom)
+            toprune.append(theroom)
+
+    connect_other_continent(toprune)
 
 def cut_doors(maxdoornum):
     global known

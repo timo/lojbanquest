@@ -412,3 +412,6 @@ def populate_db():
     print "First step: valsi"
     populate_valsi()
 
+    print "Second step: the world"
+    generate_world()
+

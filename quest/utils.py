@@ -110,7 +110,8 @@ def cmavoStep(name):
 
     # rule 6: switches the consonant from voiced to unvoiced or vice versa
     try:
-        others.append(pairs[name[0]] + name[1:])
+        if len(name) > 1 and name[0] in pairs:
+            others.append(pairs[name[0]] + name[1:])
     except: pass
 
     return and_(or_(*(Room.name == other for other in others)),

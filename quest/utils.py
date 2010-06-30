@@ -7,8 +7,12 @@ import random
 
 roomseed = u"pinka"
 
-def makeWorldGraph():
-    out = open("world.dot", "w")
+def makeWorldGraph(outfile = "world.dot", limiter = None):
+    if limiter:
+        print outfile, [a.name for a in limiter]
+    else:
+        print outfile
+    out = open(outfile, "w")
     out.write("""graph "Tersistu'as" {
   graph [overlap=true]
   node [shape=none fontsize=10]
@@ -20,11 +24,8 @@ def makeWorldGraph():
 
     for room in Room.query.order_by(Room.name):
         if len(room.name) == 5: continue
-        if len(room.doors) == 0:
-            out.write('    "%s"' % room.name)
-        for other in room.doors:
-            if other.name < room.name:
-                out.write("""    "%s" -- "%s"\n""" % (room.name, other.name))
+        if limiter and room not in limiter: continue
+        out.write('    "%s"' % room.name)
 
     out.write("""}
   subgraph "gismu" {
@@ -32,9 +33,24 @@ def makeWorldGraph():
 
     for room in Room.query.order_by(Room.name):
         if len(room.name) != 5: continue
+        if limiter and room not in limiter: continue
         if len(room.doors) == 0:
             out.write('    "%s"' % room.name)
         for other in room.doors:
+            if limiter and other not in limiter: continue
+            if other.name < room.name:
+                out.write("""    "%s" -- "%s"\n""" % (room.name, other.name))
+
+    out.write("""}  subgraph "cmavo" {
+    node [fontcolor=blue]\n""")
+
+    for room in Room.query.order_by(Room.name):
+        if len(room.name) == 5: continue
+        if limiter and room not in limiter: continue
+        if len(room.doors) == 0:
+            out.write('    "%s"\n' % room.name)
+        for other in room.doors:
+            if limiter and other not in limiter: continue
             if other.name < room.name:
                 out.write("""    "%s" -- "%s"\n""" % (room.name, other.name))
 

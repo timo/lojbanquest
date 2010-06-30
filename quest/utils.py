@@ -151,7 +151,12 @@ def cmavoStep(name):
     try:
         if len(name) > 1 and name[0] in pairs:
             others.append(pairs[name[0]] + name[1:])
-    except: pass
+    except Exception, e:
+        print
+        print "found an exception while making connections by switching voiced/unvoiced"
+        print e
+        print
+        raise
 
     return and_(or_(*(Room.name == other for other in others)),
                 Room.name != name)
@@ -264,7 +269,9 @@ def make_rooms():
 
     for gismu in WordCard.query.order_by(WordCard.word):
         num += 1
-        print "\r(% 5i/% 5i) %s" % (num, count, gismu.word),
+        # only print every 10th line
+        if num % 10 == 0:
+            print "\r(% 5i/% 5i) %s" % (num, count, gismu.word),
 
         room = Room()
         room.name = gismu.word
@@ -278,7 +285,8 @@ def connect_rooms():
         
         rafsi = WordCard.query.filter(WordCard.word == theroom.name).one().rafsi.split()
         
-        print "\r(% 5i/% 5i) %s - %s                          " % (num, count, theroom.name, rafsi),
+        if num % 10 == 0: # only every 10th one.
+            print "\r(% 5i/% 5i) %s - %s                          " % (num, count, theroom.name, rafsi),
 
         # is this a gismu or is this a rafsi?
 

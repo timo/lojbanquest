@@ -7,7 +7,9 @@ import random
 
 roomseed = u"pinka"
 
-def makeWorldGraph(outfile = "world.dot", limiter = None):
+# citymap: city->rooms
+# reverse citymap: room->city
+def makeWorldGraph(outfile = "world.dot", limiter = None, citymap = {}, reversecitymap = {}):
     if limiter:
         print outfile, [a.name for a in limiter]
     else:
@@ -16,8 +18,19 @@ def makeWorldGraph(outfile = "world.dot", limiter = None):
     out.write("""graph "Tersistu'as" {
   graph [overlap=true]
   node [shape=none fontsize=10]
-  edge [color=grey]
-""")
+  edge [color=grey]\n""")
+
+    if citymap:
+        if not reversecitymap:
+            for k, v in citymap.iteritems():
+                for room in v:
+                   reversecitymap[room] = k
+        out.write("""    subgraph "cities" {
+            node [fontcolor=black shape=round fontsize=14]\n""")
+        for k in citymap:
+            out.write('         "%s"\n' % k)
+
+        out.write("""    }\n""")
 
     out.write("""  subgraph "cmavo" {
     node [fontcolor=blue]\n""")
@@ -25,7 +38,8 @@ def makeWorldGraph(outfile = "world.dot", limiter = None):
     for room in Room.query.order_by(Room.name):
         if len(room.name) == 5: continue
         if limiter and room not in limiter: continue
-        out.write('    "%s"' % room.name)
+        if reversecitymap and room in reversecitymap: continue
+        out.write('    "%s"\n' % room.name)
 
     out.write("""}
   subgraph "gismu" {
@@ -34,6 +48,7 @@ def makeWorldGraph(outfile = "world.dot", limiter = None):
     for room in Room.query.order_by(Room.name):
         if len(room.name) != 5: continue
         if limiter and room not in limiter: continue
+        if reversecitymap and room in reversecitymap: continue
         if len(room.doors) == 0:
             out.write('    "%s"' % room.name)
         for other in room.doors:
@@ -47,12 +62,16 @@ def makeWorldGraph(outfile = "world.dot", limiter = None):
     for room in Room.query.order_by(Room.name):
         if len(room.name) == 5: continue
         if limiter and room not in limiter: continue
+        if reversecitymap and room in reversecitymap: continue
         if len(room.doors) == 0:
             out.write('    "%s"\n' % room.name)
         for other in room.doors:
             if limiter and other not in limiter: continue
             if other.name < room.name:
-                out.write("""    "%s" -- "%s"\n""" % (room.name, other.name))
+                if reversecitymap and other in reversecitymap:
+                    out.write("""    "%s" -- "%s"\n""" % (room.name, reversecitymap[other]))
+                else:
+                    out.write("""    "%s" -- "%s"\n""" % (room.name, other.name))
 
     out.write("""  }\n
 }""")
@@ -418,14 +437,41 @@ def populate_db():
     print "third step: find some cities"
     cities = []
     randrms = random_rooms()
-    while len(cities) < 50:
-        room = randrms.next()
-        if len(room.name) == 5:
-            cities.append((room.name, find_city(room.name)))
-            print "found cities for room %s" % room.name
+    maxsize = 0
+    try:
+        while maxsize < 70:
+            room = randrms.next()
+            if len(room.name) == 5:
+                city = find_city(room.name)
+                if len(city) > maxsize:
+                    maxsize = len(city)
+                if len(city) > 15:
+                    cities.append((room.name, city))
+    except StopIteration:
+        print "all rooms exhausted"
 
     cities.sort(key=lambda c: len(c[1]))
+    cities.reverse()
+    
+    print "separating cities"
+    exhaustedrooms = []
+    acceptedcities = []
+    for city in cities:
+        overlap = 0
+        for room in city[1]:
+            if room in exhaustedrooms:
+                overlap += 1
+
+        if overlap > 0:
+            print "kicked out city %s (%d) (overlap was %d)" % (city[0], len(city[1]), overlap)
+            continue
+
+        exhaustedrooms.extend(city[1])
+        acceptedcities.append(city)
+    
     print "\n".join(["%d - %s" % (len(c[1]), c[0]) for c in cities])
+
+    makeWorldGraph(outfile="world_cities.dot", citymap=dict(cities))
 
 def random_rooms():
     num = Room.query.count()
@@ -443,8 +489,6 @@ class CityCrawler(object):
         self.step_one()
         while self.add_rooms() > 0:
             self.follow_corridors()
-            print "adding another layer"
-            print "rooms in it: %r" % ([r.name for r in self.visitedrooms],)
         return self.visitedrooms
 
     def step_one(self):
@@ -454,7 +498,6 @@ class CityCrawler(object):
                 if croom not in additions and croom not in self.visitedrooms:
                     additions.append(croom)
         self.visitedrooms.extend(additions)
-        print "step one done. rooms in it: %r" % ([r.name for r in self.visitedrooms],)
         self.follow_corridors()
 
     def follow_corridors(self):
@@ -479,11 +522,9 @@ class CityCrawler(object):
                     self.visitedrooms.append(o)
                     rooms_added += 1
 
-        print "returning ", rooms_added
         return rooms_added
 
 def find_city(startroom = "pinka"):
     crawler = CityCrawler(startroom)
     rooms = crawler.crawl()
-    makeWorldGraph(startroom + ".dot", rooms)
     return rooms

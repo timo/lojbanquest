@@ -25,12 +25,15 @@ def makeWorldGraph(outfile = "world.dot", limiter = None, citymap = {}, reversec
             for k, v in citymap.iteritems():
                 for room in v:
                    reversecitymap[room] = k
-        out.write("""    subgraph "cities" {
-            node [fontcolor=black shape=round fontsize=14]\n""")
-        for k in citymap:
-            out.write('         "%s"\n' % k)
 
-        out.write("""    }\n""")
+        for k, v in citymap.iteritems():
+            out.write("""    subgraph "cluster_%s" {
+            node [fontcolor=black shape=round fontsize=14]\n""" % k)
+            
+            for room in v:
+                out.write('         "%s"\n' % room.name)
+
+            out.write("""    }\n""")
 
     out.write("""  subgraph "cmavo" {
     node [fontcolor=blue]\n""")
@@ -38,7 +41,6 @@ def makeWorldGraph(outfile = "world.dot", limiter = None, citymap = {}, reversec
     for room in Room.query.order_by(Room.name):
         if len(room.name) == 5: continue
         if limiter and room not in limiter: continue
-        if reversecitymap and room in reversecitymap: continue
         out.write('    "%s"\n' % room.name)
 
     out.write("""}
@@ -48,7 +50,6 @@ def makeWorldGraph(outfile = "world.dot", limiter = None, citymap = {}, reversec
     for room in Room.query.order_by(Room.name):
         if len(room.name) != 5: continue
         if limiter and room not in limiter: continue
-        if reversecitymap and room in reversecitymap: continue
         if len(room.doors) == 0:
             out.write('    "%s"' % room.name)
         for other in room.doors:
@@ -62,16 +63,12 @@ def makeWorldGraph(outfile = "world.dot", limiter = None, citymap = {}, reversec
     for room in Room.query.order_by(Room.name):
         if len(room.name) == 5: continue
         if limiter and room not in limiter: continue
-        if reversecitymap and room in reversecitymap: continue
         if len(room.doors) == 0:
             out.write('    "%s"\n' % room.name)
         for other in room.doors:
             if limiter and other not in limiter: continue
             if other.name < room.name:
-                if reversecitymap and other in reversecitymap:
-                    out.write("""    "%s" -- "%s"\n""" % (room.name, reversecitymap[other]))
-                else:
-                    out.write("""    "%s" -- "%s"\n""" % (room.name, other.name))
+                out.write("""    "%s" -- "%s"\n""" % (room.name, other.name))
 
     out.write("""  }\n
 }""")
@@ -469,9 +466,9 @@ def populate_db():
         exhaustedrooms.extend(city[1])
         acceptedcities.append(city)
     
-    print "\n".join(["%d - %s" % (len(c[1]), c[0]) for c in cities])
+    print "\n".join(["%d - %s" % (len(c[1]), c[0]) for c in acceptedcities])
 
-    makeWorldGraph(outfile="world_cities.dot", citymap=dict(cities))
+    makeWorldGraph(outfile="world_cities.dot", citymap=dict(acceptedcities))
 
 def random_rooms():
     num = Room.query.count()

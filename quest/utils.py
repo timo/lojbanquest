@@ -217,7 +217,9 @@ def populate_valsi():
             wc.rafsi = rafsi
             session.add(wc)
 
+count = 0
 def make_rooms():
+    global count
     num = 0
     count = WordCard.query.count()
 
@@ -229,6 +231,7 @@ def make_rooms():
         room.name = gismu.word
 
 def connect_rooms():
+    global count
     num = 0
 
     for theroom in Room.query.order_by(Room.name):
@@ -254,8 +257,9 @@ def connect_rooms():
             if theroom not in other.doors:
                 other.doors.append(theroom)
 
+known = []
 def prune_rooms(roomseeds):
-    known = []
+    global known
     look_at = [Room.get_by(name = roomseed) for roomseed in roomseeds]
 
     while len(look_at) > 0:
@@ -271,9 +275,13 @@ def prune_rooms(roomseeds):
             session.delete(theroom)
 
 def cut_doors(maxdoornum):
+    global known
     weight = lambda num: max((9 - num) ** 2, 1)
 
     count = len(known)
+    num = 0
+
+    killedcount = 0
 
     for theroom in Room.query.order_by(Room.name):
         num += 1
@@ -293,10 +301,21 @@ def cut_doors(maxdoornum):
             kills = set()
             while len(kills) < dnum - maxdoornum and rooms:
                 kills = kills | set(rooms.pop())
+                
+            killedcount += len(kills)
 
             for k in kills:
-                k.doors.remove(theroom)
-                theroom.doors.remove(k)
+                try:
+                    if k != theroom:
+                        k.doors.remove(theroom)
+                        theroom.doors.remove(k)
+                except Exception, e:
+                    print
+                    print e
+                    print theroom.name
+                    print k.name
+                    print
+    print "killed %d connections in total." % killedcount
 
 def generate_world():
     print "Creating rooms from WordCards..."

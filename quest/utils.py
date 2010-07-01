@@ -473,7 +473,14 @@ def populate_db():
 
         exhaustedrooms.extend(city[1])
         acceptedcities.append(city)
-    
+
+        cityObj = City()
+        cityObj.name = city[0]
+        session.add(cityObj)
+
+        for room in city[1]:
+            room.city = cityObj
+
     print "\n".join(["%d - %s" % (len(c[1]), c[0]) for c in acceptedcities])
 
     makeWorldGraph(outfile="world_cities.dot", citymap=dict(acceptedcities))

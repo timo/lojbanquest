@@ -4,9 +4,14 @@ import datetime
 
 __metadata__ = MetaData()
 
+class City(Entity):
+    rooms    = OneToMany("Room")
+    name     = Field(Unicode(6), primary_key=True)
+
 class Room(Entity):
     name     = Field(Unicode(6), primary_key=True)
     doors    = ManyToMany("Room")
+    city     = ManyToOne("City")
 
 class Player(Entity):
     """This class represents a player as well as a session (one session per player)"""
@@ -49,7 +54,7 @@ class HumanSentence(Entity):
 
 class Selmaho(Entity):
     """This class is used for letting game admins/BPFK members assign bonuses for selmaho"""
-    selmaho  = Field(Unicode(12), primary_key=True)
+    selmaho  = Field(Unicode(6), primary_key=True)
     multi    = Field(Float)
 
     def __repr__(self):

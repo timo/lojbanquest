@@ -43,7 +43,7 @@ class RoomDisplay(object):
         for room in crawl:
             if len(room.name) != 5:
                 if room in thisroom.doors:
-                    dotproc.stdin.write("""        "%(name)s" [URL="goto/%(name)s" fontsize=10]\n""" % {"name": room.name})
+                    dotproc.stdin.write("""        "%(name)s" [fontsize=10 URL="goto/%(name)s"]\n""" % {"name": room.name})
                 else:
                     dotproc.stdin.write("""        "%(name)s"\n""" % {"name": room.name})
 
@@ -52,14 +52,14 @@ class RoomDisplay(object):
         node[fontcolor=red]\n""")
 
         for room in thisroom.doors:
-            dotproc.stdin.write("""        "%(this)s" [URL="goto/%(this)s" fontsize=10]\n""" % {"this": room.name})
+            dotproc.stdin.write("""        "%(this)s" [fontsize=10 URL="goto/%(this)s"]\n""" % {"this": room.name})
 
 
         for room in crawl:
             if room.name == self.room:
                 dotproc.stdin.write("""        "%(name)s" [shape=diamond fontsize=12]\n""" % {"name": room.name})
             elif room.name == self.prev:
-                dotproc.stdin.write("""        "%(name)s" [shape=egg URL="goto/%(name)s fontsize=10"]\n""" % {"name": room.name})
+                dotproc.stdin.write("""        "%(name)s" [shape=egg fontsize=10 URL="goto/%(name)s"]\n""" % {"name": room.name})
             
             for other in room.doors:
                 if other.name < room.name and other in crawl:
@@ -133,7 +133,7 @@ def roomdisplay_render(self, h, binding, *args):
 
     return h.root
 
-gotorex = re.compile("goto/([a-z\\']+)")
+gotorex = re.compile("goto/([^\"]+)")
 
 @presentation.render_for(RoomDisplay, model="map")
 def render_map(self, h, binding, *args):
@@ -142,7 +142,7 @@ def render_map(self, h, binding, *args):
     mapstr = self.get_map_map()
 
     def register_goto(match):
-        room = unicode(match.group(1))
+        room = unicode(match.group(1)).replace("&#39;", "'")
         return "?" + "&".join(h.session.sessionid_in_url(h.request, h.response) + (h.register_callback(4, lambda other=room: self.enterRoom(other), False), ))
 
     newmapstr = ""

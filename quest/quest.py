@@ -75,7 +75,7 @@ class RoomDisplay(object):
         dotproc = Popen(["neato", "-Tpng", "-o" + img_path, "-Tcmapx_np", "-o" + map_path, "/dev/stdin"], stdin=PIPE)
         dotproc.stdin.write("""graph tersistuhas {
     graph [overlap=false]
-    node [shape=none fontsize=10]
+    node [shape=none fontsize=7]
     edge [color=grey]
     subgraph cmavo {
         node [fontcolor=blue]\n""")
@@ -83,7 +83,7 @@ class RoomDisplay(object):
         for room in crawl:
             if len(room.name) != 5:
                 if room in thisroom.doors:
-                    dotproc.stdin.write("""        "%(name)s" [URL="goto/%(name)s"]\n""" % {"name": room.name})
+                    dotproc.stdin.write("""        "%(name)s" [URL="goto/%(name)s" fontsize=10]\n""" % {"name": room.name})
                 else:
                     dotproc.stdin.write("""        "%(name)s"\n""" % {"name": room.name})
 
@@ -91,18 +91,19 @@ class RoomDisplay(object):
         dotproc.stdin.write("""    } subgraph gismu {
         node[fontcolor=red]\n""")
 
+        for room in thisroom.doors:
+            dotproc.stdin.write("""        "%(this)s" [URL="goto/%(this)s" fontsize=10]\n""" % {"this": room.name})
+
+
         for room in crawl:
             if room.name == self.room:
-                dotproc.stdin.write("""        "%(name)s" [shape=diamond]\n""" % {"name": room.name})
+                dotproc.stdin.write("""        "%(name)s" [shape=diamond fontsize=12]\n""" % {"name": room.name})
             elif room.name == self.prev:
-                dotproc.stdin.write("""        "%(name)s" [shape=egg URL="goto/%(name)s"]\n""" % {"name": room.name})
+                dotproc.stdin.write("""        "%(name)s" [shape=egg URL="goto/%(name)s fontsize=10"]\n""" % {"name": room.name})
+            
             for other in room.doors:
                 if other.name < room.name and other in crawl:
-                    if room in thisroom.doors:
-                        dotproc.stdin.write("""        "%(this)s" [URL="goto/%(this)s"]\n
-            "%(this)s" -- "%(other)s"\n""" % {"this": room.name, "other": other.name})
-                    else:
-                        dotproc.stdin.write("""        "%(this)s" -- "%(other)s"\n""" % {"this": room.name, "other": other.name})
+                    dotproc.stdin.write("""        "%(this)s" -- "%(other)s"\n""" % {"this": room.name, "other": other.name})
         
         dotproc.stdin.write("""    } }""")
 

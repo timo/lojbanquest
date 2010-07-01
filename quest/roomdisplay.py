@@ -63,7 +63,20 @@ class RoomDisplay(object):
             
             for other in room.doors:
                 if other.name < room.name and other in crawl:
-                    dotproc.stdin.write("""        "%(this)s" -- "%(other)s"\n""" % {"this": room.name, "other": other.name})
+                    headtail = " "
+                    if other.city != room.city:
+                        if other.city is not None:
+                            headtail += 'arrowhead="inv" '
+                        if room.city is not None:
+                            headtail += 'arrowtail="inv" '
+                        if room.city is not None and other.city is not None:
+                            headtail += 'dir="both" '
+                        elif room.city is not None:
+                            headtail += 'dir="back"'
+                        else:
+                            headtail += 'dir="forward"'
+                        print room.name, headtail, other.name
+                    dotproc.stdin.write("""        "%(this)s" -- "%(other)s" [%(ht)s]\n""" % {"this": room.name, "other": other.name, "ht": headtail})
         
         dotproc.stdin.write("""    } }""")
 

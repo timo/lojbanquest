@@ -54,13 +54,14 @@ class RoomDisplay(object):
         try:
             raise IOError
             cached = open(pkg_resources.resource_filename("quest", "../cache/%s.png" % self.room), "r")
-            e = HTTPOk()
-            e.data = cached.read()
-            e.content_type = "image/png"
+            #e = HTTPOk()
+            #e.data = ...
+            data = cached.read()
+            #e.content_type = "image/png"
             #e.cache_expires(seconds=3600)
             print "got image from cache"
             cached.close()
-            raise e
+            return data
         except IOError:
             pass
         crawl = [models.Room.query.filter_by(name=self.room).one()]
@@ -73,7 +74,7 @@ class RoomDisplay(object):
             crawl.extend(add)
             add = []
 
-        dotproc = Popen("fdp -Tpng /dev/stdin".split(), stdin=PIPE, stdout=PIPE)
+        dotproc = Popen("neato -Tpng /dev/stdin".split(), stdin=PIPE, stdout=PIPE)
         dotproc.stdin.write("""graph tersistuhas {
     graph [overlap=false]
     node [shape=none fontsize=10]
@@ -99,17 +100,18 @@ class RoomDisplay(object):
 
         dotproc.stdin.close()
 
-        e = HTTPOk()
-        e.data = dotproc.stdout.read()
-        e.content_type = 'image/png'
-        e.cache_expires(seconds=3600)
+        #e = HTTPOk()
+        #e.data = ...
+        data = dotproc.stdout.read()
+        #e.content_type = 'image/png'
+        #e.cache_expires(seconds=3600)
 
         cached = open(pkg_resources.resource_filename("quest", "../cache/%s.png" % self.room), "w")
-        cached.write(e.data)
+        cached.write(data)
         cached.close()
         print "wrote image to cache"
 
-        raise e
+        return data
 
     def enterRoom(self, room):
         try:

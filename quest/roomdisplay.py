@@ -4,6 +4,7 @@ from nagare import presentation, component, state, var
 import models
 from monster import *
 import pkg_resources
+import re
 
 class RoomDisplay(object):
     """This class encapsulates many Components that build up the GUI that
@@ -132,8 +133,22 @@ def roomdisplay_render(self, h, binding, *args):
 
     return h.root
 
+gotorex = re.compile("goto/([a-z\\']+)")
+
 @presentation.render_for(RoomDisplay, model="map")
 def render_map(self, h, binding, *args):
     h << h.img(usemap="tersistuhas").action(self.get_map_image)
-    h << h.parse_htmlstring(self.get_map_map())
+
+    mapstr = self.get_map_map()
+
+    def register_goto(match):
+        room = unicode(match.group(1))
+        return "?" + "&".join(h.session.sessionid_in_url(h.request, h.response) + (h.register_callback(4, lambda other=room: self.enterRoom(other), False), ))
+
+    newmapstr = ""
+
+    for line in mapstr.split("\n"):
+        newmapstr += re.sub(gotorex, register_goto, line)
+
+    h << h.parse_htmlstring(newmapstr)
     return h.root

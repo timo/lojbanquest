@@ -66,7 +66,7 @@ class RoomDisplay(object):
             pass
         crawl = [models.Room.query.filter_by(name=self.room).one()]
         add = []
-        for i in range(1):
+        for i in range(2):
             for room in crawl:
                 for reached in room.doors:
                     if reached not in crawl and reached not in add:
@@ -92,8 +92,10 @@ class RoomDisplay(object):
         for room in crawl:
             if room.name == self.room:
                 dotproc.stdin.write("""        "%s" [shape=diamond]\n""" % room.name)
+            elif room.name == self.prev:
+                dotproc.stdin.write("""        "%s" [shape=egg]\n""" % room.name)
             for other in room.doors:
-                if other.name < room.name:
+                if other.name < room.name and other in crawl:
                     dotproc.stdin.write("""        "%s" -- "%s"\n""" % (room.name, other.name))
         
         dotproc.stdin.write("""    } }""")

@@ -29,6 +29,10 @@ class GameSession(object):
 
         self.model("game")
 
+    def enterRoom(self, roomname):
+        player = session.query(models.Player).get(self.player)
+        player.position = session.query(models.Room).get(roomname)
+
 @presentation.render_for(GameSession)
 def render(self, h, *args):
     h.head << h.head.title("LojbanQuest draft")
@@ -147,6 +151,8 @@ class RoomDisplay(object):
         
         self.monsters = component.Component(Monsters(self.gs))
         self.monsters.o.addMonster(component.Component(Monster(self.gs)))
+
+        self.gs.enterRoom(self.room)
 
         print "entered room", self.room
 

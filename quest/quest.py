@@ -256,7 +256,7 @@ def player_render(self, h, binding, *args):
 def wordbag_render(self, h, binding, *args):
     if len(self.wordbag.words) > 0:
         with h.div(class_="wordbag"):
-            h << {"style": "-moz-column-count:5;" }
+            h << {"style": "column-count:5; -moz-column-count:5; -webkit-column-count:5; position:absolute; bottom: 5px; left: 5px; right: 5px; height: auto" }
             h << h.a("re-fill bag.").action(self.wordbag.diceWords)
             with h.ul():
                 for wo, ct in self.wordbag.words.iteritems():

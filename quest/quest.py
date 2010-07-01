@@ -54,14 +54,15 @@ class RoomDisplay(object):
         self.prev = room
         self.enterRoom(room)
 
-    map_cache_path = lambda self, room, typ: pkg_resources.resource_filename("quest", "../cache/%s.%s" % (room, typ))
+    map_cache_path = lambda self, room, frm, typ: pkg_resources.resource_filename("quest", "../cache/%s_%s.%s" % (room, frm, typ))
 
     def create_map(self):
-        img_path = self.map_cache_path(self.room, "png")
-        map_path = self.map_cache_path(self.room, "map")
+        img_path = self.map_cache_path(self.room, self.prev, "png")
+        map_path = self.map_cache_path(self.room, self.prev, "map")
 
-        crawl = [models.Room.query.filter_by(name=self.room).one()]
-        depths = []
+        thisroom = models.Room.query.filter_by(name=self.room).one()
+
+        crawl = [thisroom]
         add = []
         for i in range(2):
             for room in crawl:
@@ -69,7 +70,6 @@ class RoomDisplay(object):
                     if reached not in crawl and reached not in add:
                         add.append(reached)
             crawl.extend(add)
-            depths.append(add)
             add = []
 
         dotproc = Popen(["neato", "-Tpng", "-o" + img_path, "-Tcmapx_np", "-o" + map_path, "/dev/stdin"], stdin=PIPE)
@@ -82,7 +82,7 @@ class RoomDisplay(object):
 
         for room in crawl:
             if len(room.name) != 5:
-                if room in depths[0]:
+                if room in thisroom.doors:
                     dotproc.stdin.write("""        "%(name)s" [URL="goto/%(name)s"]\n""" % {"name": room.name})
                 else:
                     dotproc.stdin.write("""        "%(name)s"\n""" % {"name": room.name})
@@ -98,7 +98,7 @@ class RoomDisplay(object):
                 dotproc.stdin.write("""        "%(name)s" [shape=egg URL="goto/%(name)s"]\n""" % {"name": room.name})
             for other in room.doors:
                 if other.name < room.name and other in crawl:
-                    if room in depths[0]:
+                    if room in thisroom.doors:
                         dotproc.stdin.write("""        "%(this)s" [URL="goto/%(this)s"]\n
             "%(this)s" -- "%(other)s"\n""" % {"this": room.name, "other": other.name})
                     else:
@@ -114,7 +114,7 @@ class RoomDisplay(object):
 
     def get_map_image(self):
         try:
-            cached = open(self.map_cache_path(self.room, "png"), "r")
+            cached = open(self.map_cache_path(self.room, self.prev, "png"), "r")
             return cached.read()
         except IOError:
             pass
@@ -127,7 +127,7 @@ class RoomDisplay(object):
 
     def get_map_map(self):
         try:
-            cached = open(self.map_cache_path(self.room, "map"), "r")
+            cached = open(self.map_cache_path(self.room, self.prev, "map"), "r")
             return cached.read()
         except IOError:
             pass

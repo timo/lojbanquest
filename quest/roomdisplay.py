@@ -33,7 +33,7 @@ class RoomDisplay(object):
 
         dotproc = Popen(["neato", "-Tpng", "-o" + img_path, "-Tcmapx_np", "-o" + map_path, "/dev/stdin"], stdin=PIPE)
         dotproc.stdin.write("""graph tersistuhas {
-    graph [overlap=false]
+    graph [overlap=false bgcolor="transparent"]
     node [shape=none fontsize=7]
     edge [color=grey]
     subgraph cmavo {

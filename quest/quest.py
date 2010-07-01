@@ -50,21 +50,14 @@ class RoomDisplay(object):
         self.prev = room
         self.enterRoom(room)
 
-    def get_image(self):
-        try:
-            raise IOError
-            cached = open(pkg_resources.resource_filename("quest", "../cache/%s.png" % self.room), "r")
-            #e = HTTPOk()
-            #e.data = ...
-            data = cached.read()
-            #e.content_type = "image/png"
-            #e.cache_expires(seconds=3600)
-            print "got image from cache"
-            cached.close()
-            return data
-        except IOError:
-            pass
+    map_cache_path = lambda self, room, typ: pkg_resources.resource_filename("quest", "../cache/%s.%s" % (room, typ))
+
+    def create_map(self):
+        img_path = self.map_cache_path(self.room, "png")
+        map_path = self.map_cache_path(self.room, "map")
+
         crawl = [models.Room.query.filter_by(name=self.room).one()]
+        depths = []
         add = []
         for i in range(2):
             for room in crawl:
@@ -72,9 +65,10 @@ class RoomDisplay(object):
                     if reached not in crawl and reached not in add:
                         add.append(reached)
             crawl.extend(add)
+            depths.append(add)
             add = []
 
-        dotproc = Popen("neato -Tpng /dev/stdin".split(), stdin=PIPE, stdout=PIPE)
+        dotproc = Popen(["neato", "-Tpng", "-o" + img_path, "-Tcmapx_np", "-o" + map_path, "/dev/stdin"], stdin=PIPE)
         dotproc.stdin.write("""graph tersistuhas {
     graph [overlap=false]
     node [shape=none fontsize=10]
@@ -84,36 +78,61 @@ class RoomDisplay(object):
 
         for room in crawl:
             if len(room.name) != 5:
-                dotproc.stdin.write("""        "%s"\n""" % room.name)
+                if room in depths[0]:
+                    dotproc.stdin.write("""        "%(name)s" [URL="goto/%(name)s"]\n""" % {"name": room.name})
+                else:
+                    dotproc.stdin.write("""        "%(name)s"\n""" % {"name": room.name})
+
 
         dotproc.stdin.write("""    } subgraph gismu {
         node[fontcolor=red]\n""")
 
         for room in crawl:
             if room.name == self.room:
-                dotproc.stdin.write("""        "%s" [shape=diamond]\n""" % room.name)
+                dotproc.stdin.write("""        "%(name)s" [shape=diamond]\n""" % {"name": room.name})
             elif room.name == self.prev:
-                dotproc.stdin.write("""        "%s" [shape=egg]\n""" % room.name)
+                dotproc.stdin.write("""        "%(name)s" [shape=egg URL="goto/%(name)s"]\n""" % {"name": room.name})
             for other in room.doors:
                 if other.name < room.name and other in crawl:
-                    dotproc.stdin.write("""        "%s" -- "%s"\n""" % (room.name, other.name))
+                    if room in depths[0]:
+                        dotproc.stdin.write("""        "%(this)s" [URL="goto/%(this)s"]\n
+            "%(this)s" -- "%(other)s"\n""" % {"this": room.name, "other": other.name})
+                    else:
+                        dotproc.stdin.write("""        "%(this)s" -- "%(other)s"\n""" % {"this": room.name, "other": other.name})
         
         dotproc.stdin.write("""    } }""")
 
         dotproc.stdin.close()
 
-        #e = HTTPOk()
-        #e.data = ...
-        data = dotproc.stdout.read()
-        #e.content_type = 'image/png'
-        #e.cache_expires(seconds=3600)
+        dotproc.wait()
 
-        cached = open(pkg_resources.resource_filename("quest", "../cache/%s.png" % self.room), "w")
-        cached.write(data)
-        cached.close()
-        print "wrote image to cache"
+        return img_path, map_path
 
-        return data
+    def get_map_image(self):
+        try:
+            cached = open(self.map_cache_path(self.room, "png"), "r")
+            return cached.read()
+        except IOError:
+            pass
+
+        (img_path, _) = self.create_map()
+
+        imgdata = open(img_path, "r").read()
+
+        return imgdata
+
+    def get_map_map(self):
+        try:
+            cached = open(self.map_cache_path(self.room, "map"), "r")
+            return cached.read()
+        except IOError:
+            pass
+
+        (_, map_path) = self.create_map()
+
+        mapdata = open(map_path, "r").read()
+
+        return mapdata
 
     def enterRoom(self, room):
         try:
@@ -149,7 +168,8 @@ def roomdisplay_render(self, h, binding, *args):
 
 @presentation.render_for(RoomDisplay, model="map")
 def render_map(self, h, binding, *args):
-    h << h.img.action(self.get_image)
+    h << h.img(usemap="tersistuhas").action(self.get_map_image)
+    h << h.parse_htmlstring(self.get_map_map())
     return h.root
 
 class Monster(object):

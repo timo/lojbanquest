@@ -24,7 +24,7 @@ class RoomDisplay(object):
 
         crawl = [thisroom]
         add = []
-        for i in range(2):
+        for i in range(2 if len(thisroom.name) == 5 else 1):
             for room in crawl:
                 for reached in room.doors:
                     if reached not in crawl and reached not in add:

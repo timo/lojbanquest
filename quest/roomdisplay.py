@@ -34,7 +34,7 @@ class RoomDisplay(object):
 
         dotproc = Popen(["neato", "-Tpng", "-o" + img_path, "-Tcmapx_np", "-o" + map_path, "/dev/stdin"], stdin=PIPE)
         dotproc.stdin.write("""graph tersistuhas {
-    graph [overlap=false bgcolor="transparent"]
+    graph [overlap=false bgcolor="transparent" model=circuit]
     node [shape=none fontsize=7]
     edge [color=grey]
     subgraph cmavo {
@@ -75,7 +75,6 @@ class RoomDisplay(object):
                             headtail += 'dir="back"'
                         else:
                             headtail += 'dir="forward"'
-                        print room.name, headtail, other.name
                     dotproc.stdin.write("""        "%(this)s" -- "%(other)s" [%(ht)s]\n""" % {"this": room.name, "other": other.name, "ht": headtail})
         
         dotproc.stdin.write("""    } }""")

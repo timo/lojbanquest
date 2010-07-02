@@ -154,14 +154,11 @@ def render_map(self, h, binding, *args):
 
     mapstr = self.get_map_map()
 
-    def register_goto(match):
-        room = unicode(match.group(1)).replace("&#39;", "'")
-        return "?" + "&".join(h.session.sessionid_in_url(h.request, h.response) + (h.register_callback(4, lambda other=room: self.enterRoom(other), False), ))
+    mapobj = h.parse_htmlstring(mapstr)
 
-    newmapstr = ""
+    for area in mapobj.xpath("//area"):
+        roomname = unicode(area.get("href").split("/")[1].replace("&#39;", "'"))
+        area.action(lambda other=roomname: self.enterRoom(other))
 
-    for line in mapstr.split("\n"):
-        newmapstr += re.sub(gotorex, register_goto, line)
-
-    h << h.parse_htmlstring(newmapstr)
+    h << mapobj
     return h.root

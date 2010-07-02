@@ -1,4 +1,6 @@
-from models import *
+from __future__ import absolute_import
+
+from quest.models import *
 import nagare.database
 import re
 from sqlalchemy import or_, and_
@@ -177,7 +179,7 @@ def populate_valsi():
 
     def make_or_get_selmaho(selmaho):
         try:
-            sm = session.query(Selmaho).filter_by(selmaho = selmaho).one()
+            sm = Selmaho.filter_by(selmaho = selmaho).one()
         except sqlalchemy.orm.exc.NoResultFound:
             sm = Selmaho()
             sm.selmaho = selmaho
@@ -432,9 +434,9 @@ def generate_world():
     print "connecting the two continents"
     print
 
-    bridge = session.query(Room).get("y'y")
-    p1 = session.query(Room).get("kadno")
-    p2 = session.query(Room).get("frica")
+    bridge = Room.get("y'y")
+    p1 = Room.get("kadno")
+    p2 = Room.get("frica")
     bridge.doors.extend([p1, p2])
     p1.doors.append(bridge)
     p2.doors.append(bridge)

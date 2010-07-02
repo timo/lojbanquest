@@ -1,16 +1,16 @@
-from __future__ import with_statement
+from __future__ import with_statement, absolute_import
 
 from nagare import presentation, component, state, var
 from nagare.namespaces import xhtml
 
 from elixir import *
 
-import models
+from quest import models
 import random
 
 # gather models
-from roomdisplay import RoomDisplay
-from monster import Monster, Monsters
+from quest.roomdisplay import RoomDisplay
+from quest.monster import Monster, Monsters
 
 class GameSession(object):
     def __init__(self):
@@ -28,8 +28,8 @@ class GameSession(object):
         self.model("game")
 
     def enterRoom(self, roomname):
-        player = session.query(models.Player).get(self.player)
-        player.position = session.query(models.Room).get(roomname)
+        player = models.Player.get(self.player)
+        player.position = models.Room.get(roomname)
 
 @presentation.render_for(GameSession)
 def render(self, h, *args):

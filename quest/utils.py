@@ -179,7 +179,7 @@ def populate_valsi():
 
     def make_or_get_selmaho(selmaho):
         try:
-            sm = Selmaho.filter_by(selmaho = selmaho).one()
+            sm = Selmaho.query.filter_by(selmaho = selmaho).one()
         except sqlalchemy.orm.exc.NoResultFound:
             sm = Selmaho()
             sm.selmaho = selmaho

@@ -334,6 +334,7 @@ def connect_other_continent(rooms):
 known = []
 def prune_rooms(roomseeds):
     global known
+    known = []
     look_at = [Room.get_by(name = roomseed) for roomseed in roomseeds]
 
     while len(look_at) > 0:
@@ -350,7 +351,11 @@ def prune_rooms(roomseeds):
         if theroom not in known:
             toprune.append(theroom)
 
-    connect_other_continent(toprune)
+    return toprune
+
+def delete_rooms(rooms):
+    for room in rooms:
+        session.delete(room)
 
 def cut_doors(maxdoornum):
     global known
@@ -413,7 +418,7 @@ def generate_world():
     print "Seeding island from '%s'." % (roomseed, )
     print
 
-    prune_rooms([roomseed])
+    connect_other_continent(prune_rooms([roomseed]))
 
     maxdoornum = 5
     print
@@ -422,6 +427,24 @@ def generate_world():
     print
 
     cut_doors(maxdoornum)
+
+    print
+    print "connecting the two continents"
+    print
+
+    bridge = session.query(Room).get("y'y")
+    p1 = session.query(Room).get("kadno")
+    p2 = session.query(Room).get("frica")
+    bridge.doors.extend([p1, p2])
+    p1.doors.append(bridge)
+    p2.doors.append(bridge)
+
+    print
+    print "finding left-over unreachable rooms"
+    print
+
+    pruned = prune_rooms([roomseed])
+    print len(pruned), [room.name for room in pruned]
 
     print
     print "Generating graphviz file."
@@ -468,7 +491,6 @@ def populate_db():
                 overlap += 1
 
         if overlap > 0:
-            print "kicked out city %s (%d) (overlap was %d)" % (city[0], len(city[1]), overlap)
             continue
 
         exhaustedrooms.extend(city[1])

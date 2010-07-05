@@ -8,10 +8,32 @@ class City(Entity):
     rooms    = OneToMany("Room")
     name     = Field(Unicode(6), primary_key=True)
 
+    def __repr__(self):
+        return u'<City "%s" with %d rooms>' % (self.name, len(self.rooms))
+
 class Room(Entity):
     name     = Field(Unicode(6), primary_key=True)
     doors    = ManyToMany("Room")
     city     = ManyToOne("City")
+
+    def __repr__(self):
+        return u'<Room "%s"%s %d doors>' % (self.name, ' in city "%s"' % city.name if city is not None else "", len(doors))
+
+class Selmaho(Entity):
+    """This class is used for letting game admins/BPFK members assign bonuses for selmaho"""
+    selmaho  = Field(Unicode(6), primary_key=True)
+    multi    = Field(Float)
+
+    def __repr__(self):
+        return "<Selmaho '%s' multiplier %f>" % (self.selmaho, self.multi)
+
+class WordCard(Entity):
+    word       = Field(Unicode(6), primary_key=True)
+    gloss      = Field(Unicode(32))
+    definition = Field(UnicodeText)
+    selmaho    = ManyToOne(Selmaho)
+    rafsi      = Field(Unicode(13))
+    rank       = Field(Integer)
 
 class Player(Entity):
     """This class represents a player as well as a session (one session per player)"""
@@ -34,8 +56,10 @@ class Player(Entity):
     maxsenlen = Field(Integer, default=10)
     dexterity = Field(Integer, default=1)
 
+    bag       = ManyToMany(WordCard)
+
     def __repr__(self):
-        return u'<Player "%s" (%sline)>' % (self.username, [u"On", u"Off"][self.status])
+        return u'<Player "%s" (%sline) in room "%s">' % (self.username, u"On" if self.status == 1 else u"Off", self.position.name)
 
 class Monster(Entity):
     name = Field(Unicode(64))
@@ -51,21 +75,6 @@ class HumanSentence(Entity):
     author   = ManyToOne(Player) # if someone uses an "old" sentence, the damage will be halved and it will not be recorded again.
     score    = Field(Integer)
     reviews  = Field(Integer)
-
-class Selmaho(Entity):
-    """This class is used for letting game admins/BPFK members assign bonuses for selmaho"""
-    selmaho  = Field(Unicode(6), primary_key=True)
-    multi    = Field(Float)
-
-    def __repr__(self):
-        return "<Selmaho '%s' multiplier %f>" % (self.selmaho, self.multi)
-
-class WordCard(Entity):
-    word       = Field(Unicode(6), primary_key=True)
-    gloss      = Field(Unicode(32))
-    definition = Field(UnicodeText)
-    selmaho    = ManyToOne(Selmaho)
-    rafsi      = Field(Unicode(13))
 
 class WordFamiliarity(Entity):
     """This class records, wether or not a player has seen a word before."""

@@ -20,19 +20,18 @@ class GameSession(object):
         self.model = state.stateless(var.Var("login"))
 
     def startGame(self, player):
-        plo = models.Player.get(player)
+        self.player =  models.Player.get(player)
 
-        self.foo = plo
-        self.player = player
-
-        self.playerBox = component.Component(Player(player, self))
-        self.roomDisplay = component.Component(RoomDisplay(plo.position.name, self))
+        self.playerBox = component.Component(Player(self.player, self))
+        self.roomDisplay = component.Component(RoomDisplay(self.player.position, self))
 
         self.model("game")
 
-    def enterRoom(self, roomname):
-        player = self.foo #models.Player.get(self.player)
-        player.position = models.Room.get(roomname)
+    def enterRoom(self, room):
+        if isinstance(room, models.Room):
+            self.player.position = room
+        else:
+            self.player.position = models.Room.get(room)
 
 class Wordbag(object):
     """This class holds the words that the player posesses."""
@@ -55,23 +54,30 @@ class Wordbag(object):
         if self.words[wc] == 0:
             del self.words[wc]
 
+class SpellInput(object):
+    def __init__(self, gs):
+        self.gs = gs
+        self.text = var.Var()
+
+    def validate(self):
+        pass
+
 class Player(object):
     """This Component represents the player of the game."""
-    def __init__(self, name, gs):
-        self.name = name
-        self.hp = 100
+    def __init__(self, player, gs):
+        self.o = player
         self.wordbag = state.stateless(Wordbag(gs))
 
     def changeHp(self, offset):
-        self.hp += offset
+        self.o.hp += offset
 
 @presentation.render_for(Player)
 def player_render(self, h, binding, *args):
     with h.div(class_ = "playerbox"):
-        h << h.h1(self.name)
+        h << h.h1(self.o.username)
         with h.span():
            h << "You currently have "
-           h << h.span(self.hp, id="hp")
+           h << h.span(self.o.health, id="hp")
            h << " health points."
            h << h.a("--").action(lambda: self.changeHp(-1))
            h << h.a("++").action(lambda: self.changeHp(+1))

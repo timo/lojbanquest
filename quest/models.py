@@ -17,7 +17,9 @@ class Room(Entity):
     city     = ManyToOne("City")
 
     def __repr__(self):
-        return u'<Room "%s"%s %d doors>' % (self.name, ' in city "%s"' % city.name if city is not None else "", len(doors))
+        return u'<Room "%s"%s %d doors>' % (self.name, 
+                                            ' in city "%s"' % self.city.name if self.city is not None else "",
+                                            len(self.doors))
 
 class Selmaho(Entity):
     """This class is used for letting game admins/BPFK members assign bonuses for selmaho"""

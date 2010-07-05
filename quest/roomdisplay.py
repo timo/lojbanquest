@@ -17,14 +17,13 @@ class RoomDisplay(object):
     map_cache_path = lambda self, room, frm, typ: pkg_resources.resource_filename("quest", "../cache/%s_%s.%s" % (room, frm, typ))
 
     def create_map(self):
-        img_path = self.map_cache_path(self.room, self.prev, "png")
-        map_path = self.map_cache_path(self.room, self.prev, "map")
+        img_path = self.map_cache_path(self.room.name, self.prev, "png")
+        map_path = self.map_cache_path(self.room.name, self.prev, "map")
 
-        thisroom = models.Room.query.filter_by(name=self.room).one()
 
-        crawl = [thisroom]
+        crawl = [self.room]
         add = []
-        for i in range(2 if len(thisroom.name) == 5 else 1):
+        for i in range(2 if len(self.room.name) == 5 else 1):
             for room in crawl:
                 for reached in room.doors:
                     if reached not in crawl and reached not in add:
@@ -42,7 +41,7 @@ class RoomDisplay(object):
 
         for room in crawl:
             if len(room.name) != 5:
-                if room in thisroom.doors:
+                if room in self.room.doors:
                     dotproc.stdin.write("""        "%(name)s" [fontsize=10 URL="goto/%(name)s"]\n""" % {"name": room.name})
                 else:
                     dotproc.stdin.write("""        "%(name)s"\n""" % {"name": room.name})
@@ -51,14 +50,14 @@ class RoomDisplay(object):
         dotproc.stdin.write("""    } subgraph gismu {
         node[fontcolor=red]\n""")
 
-        for room in thisroom.doors:
+        for room in self.room.doors:
             dotproc.stdin.write("""        "%(this)s" [fontsize=10 URL="goto/%(this)s"]\n""" % {"this": room.name})
 
 
         for room in crawl:
-            if room.name == self.room:
+            if room == self.room:
                 dotproc.stdin.write("""        "%(name)s" [shape=diamond fontsize=12]\n""" % {"name": room.name})
-            elif room.name == self.prev:
+            elif room.name == self.prev.name:
                 dotproc.stdin.write("""        "%(name)s" [shape=egg fontsize=10 URL="goto/%(name)s"]\n""" % {"name": room.name})
             
             for other in room.doors:
@@ -87,7 +86,7 @@ class RoomDisplay(object):
 
     def get_map_image(self):
         try:
-            cached = open(self.map_cache_path(self.room, self.prev, "png"), "r")
+            cached = open(self.map_cache_path(self.room.name, self.prev, "png"), "r")
             return cached.read()
         except IOError:
             pass
@@ -100,7 +99,7 @@ class RoomDisplay(object):
 
     def get_map_map(self):
         try:
-            cached = open(self.map_cache_path(self.room, self.prev, "map"), "r")
+            cached = open(self.map_cache_path(self.room.name, self.prev, "map"), "r")
             return cached.read()
         except IOError:
             pass
@@ -117,10 +116,9 @@ class RoomDisplay(object):
         except:
             self.prev = room
         if isinstance(room, models.Room):
-            #raise ProgrammingError("Do not call RoomDisplay.enterRoom with a Room instance.")
-            self.room = room.name
-        else:
             self.room = room
+        else:
+            self.room = models.Room.get(room)
         
         self.monsters = component.Component(Monsters(self.gs))
         self.monsters.o.addMonster(component.Component(Monster(self.gs)))
@@ -131,17 +129,16 @@ class RoomDisplay(object):
 
 @presentation.render_for(RoomDisplay)
 def roomdisplay_render(self, h, binding, *args):
-    room = models.Room.query.get(self.room)
     h << self.monsters
-    if room.city:
-        h << h.p("You are in ", h.span(room.name, id="roomname"), " in the city of ", h.span(room.city.name, id="cityname"))
+    if self.room.city:
+        h << h.p("You are in ", h.span(self.room.name, id="roomname"), " in the city of ", h.span(self.room.city.name, id="cityname"))
     else:
-        h << h.p("You are in ", h.span(room.name, id="roomname"))
+        h << h.p("You are in ", h.span(self.room.name, id="roomname"))
     with h.div():
         h << "Doors:"
         with h.ul():
-            h << (h.li(h.a(other.name).action(lambda other=other: self.enterRoom(other.name))) for other in room.doors if other.name != self.prev)
-            h << h.li("Back: ", h.a(self.prev).action(lambda other=self.prev: self.enterRoom(self.prev)))
+            h << (h.li(h.a(other.name).action(lambda other=other: self.enterRoom(other))) for other in self.room.doors if other != self.prev)
+            h << h.li("Back: ", h.a(self.prev.name).action(lambda other=self.prev: self.enterRoom(self.prev)))
 
     return h.root
 

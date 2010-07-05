@@ -7,6 +7,8 @@ from sqlalchemy import or_, and_
 import sqlalchemy.orm.exc 
 import random
 
+import pkg_resources
+
 roomseed = u"pinka"
 
 # citymap: city->rooms
@@ -169,10 +171,7 @@ def populate_valsi():
 
     print "gismu and rafsi-cmavo:"
 
-    try:
-        lines = open("data/gismu.txt").readlines()[1:]
-    except:
-        lines = open("../data/gismu.txt").readlines()[1:]
+    lines = pkg_resources.resource_stream("quest", "../data/gismu.txt").readlines()[1:]
 
     num = 0
     count = len(lines)
@@ -224,10 +223,7 @@ def populate_valsi():
     print "rafsi-less cmavo and selma'o of rafsi-cmavo"
     print
 
-    try:
-        lines = open("data/cmavo.txt").readlines()[1:]
-    except:
-        lines = open("../data/cmavo.txt").readlines()[1:]
+    lines = pkg_resources.resource_stream("quest", "../data/cmavo.txt").readlines()[1:]
 
     count= len(lines)
     num = 0

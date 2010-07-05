@@ -25,7 +25,7 @@ class Selmaho(Entity):
     multi    = Field(Float)
 
     def __repr__(self):
-        return "<Selmaho '%s' multiplier %f>" % (self.selmaho, self.multi)
+        return "<Selmaho '%s' multiplier %r>" % (self.selmaho, self.multi)
 
 class WordCard(Entity):
     word       = Field(Unicode(6), primary_key=True)
@@ -34,6 +34,9 @@ class WordCard(Entity):
     selmaho    = ManyToOne(Selmaho)
     rafsi      = Field(Unicode(13))
     rank       = Field(Integer)
+
+    def __repr__(self):
+        return '<Word "%s">' % (self.word)
 
 class Player(Entity):
     """This class represents a player as well as a session (one session per player)"""

@@ -259,7 +259,7 @@ def populate_valsi():
             wc.rafsi = rafsi
             session.add(wc)
 
-    lines = pkg_resources.resource_stream("quest", "../data/cmavo.txt").readlines()
+    lines = pkg_resources.resource_stream("quest", "../data/big_list.txt").readlines()
 
     rank = 1
     for valsi in lines:

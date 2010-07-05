@@ -259,6 +259,20 @@ def populate_valsi():
             wc.rafsi = rafsi
             session.add(wc)
 
+    lines = pkg_resources.resource_stream("quest", "../data/cmavo.txt").readlines()
+
+    rank = 1
+    for valsi in lines:
+        word = unicode(valsi.split()[0]).replace(".", "")
+        selmaho = unicode(valsi.split()[1])
+        if "*" in selmaho:
+            continue
+        try:
+            WordCard.query.get(word).rank = rank
+            rank += 1
+        except:
+            print "could not set rank for word", valsi.split()[0]
+
 count = 0
 def make_rooms():
     global count

@@ -11,6 +11,7 @@ import random
 # gather models
 from quest.roomdisplay import RoomDisplay
 from quest.monster import Monster, Monsters
+from quest.questlogin import QuestLogin
 
 class GameSession(object):
     def __init__(self):
@@ -20,6 +21,8 @@ class GameSession(object):
 
     def startGame(self, player):
         plo = models.Player.get(player)
+
+        self.foo = plo
         self.player = player
 
         self.playerBox = component.Component(Player(player, self))
@@ -28,21 +31,8 @@ class GameSession(object):
         self.model("game")
 
     def enterRoom(self, roomname):
-        player = models.Player.get(self.player)
+        player = self.foo #models.Player.get(self.player)
         player.position = models.Room.get(roomname)
-
-@presentation.render_for(GameSession)
-def render(self, h, *args):
-    h.head << h.head.title("LojbanQuest draft")
-    if self.model() == "login":
-        h << self.loginManager
-    elif self.model() == "game":
-        h << h.h1("Welcome to LojbanQuest!")
-        h << self.playerBox
-        h << self.playerBox.render(h, model="wordbag")
-        h << self.roomDisplay
-        h << h.div(self.roomDisplay.render(h, model="map"), style="position:absolute; right: 0; top: 0;")
-    return h.root
 
 class Wordbag(object):
     """This class holds the words that the player posesses."""
@@ -105,46 +95,20 @@ def wordbag_render(self, h, binding, *args):
     
     return h.root
 
-class QuestLogin(object):
-    def __init__(self):
-        self.message = state.stateless(var.Var(""))
 
-    def login(self, username, password, binding):
-        po = models.Player.query.get(username())
-        if not po:
-            self.message("No such user. Try registering instead.")
-        elif po.password != password():
-            self.message("Login failed.")
-        else:
-            binding.answer(username())
-         
+@presentation.render_for(GameSession)
+def render(self, h, *args):
+    h.head << h.head.title("LojbanQuest draft")
+    if self.model() == "login":
+        h << self.loginManager
+    elif self.model() == "game":
+        h << h.h1("Welcome to LojbanQuest!")
+        h << self.playerBox
+        h << self.playerBox.render(xhtml.AsyncRenderer(h), model="wordbag")
+        h << self.roomDisplay
+        h << h.div(self.roomDisplay.render(h, model="map"), style="position:absolute; right: 0; top: 0;")
+    return h.root
 
-    def register(self, username, password, binding):
-        # see if there are duplicate players.
-        if models.Player.query.get(username()):
-            self.message("A player with that username already exists.")
-            return
-
-        np = models.Player(username = username(), password = password())
-        np.position = models.Room.query.get(u"kalsa")
-        session.add(np)
-        session.flush()
-        self.login(username, password, binding)
-
-
-@presentation.render_for(QuestLogin)
-def login_form(self, h, binding, *args):
-    un = var.Var()
-    pwd = var.Var()
-    return h.form("Please sign in with your username and password or register a new account.",
-                  h.br(),
-                  self.message(),
-                  h.br(),
-                  h.input.action(un),
-                  h.input.action(pwd),
-                  h.input(type="submit", value="login").action(lambda: self.login(un, pwd, binding)),
-                  h.input(type="submit", value="register").action(lambda: self.register(un, pwd, binding))
-                  )
 
 # ---------------------------------------------------------------
 

@@ -32,6 +32,8 @@ class Room(Base):
     name      = Column(Unicode(6), primary_key=True)
     city_name = Column(Unicode(6), ForeignKey("City.name"), nullable=True)
 
+    realm     = Column(Enum("V", "VV", "V'V", "CV", "CVV", "CV'V", "CVCCV", "CCVCV"))
+
     doors     = relationship("Room", secondary=Door.__table__,
                              primaryjoin=or_(name == Door.room_a_id, name == Door.room_b_id),
                              secondaryjoin=or_(name == Door.room_a_id, name == Door.room_b_id),

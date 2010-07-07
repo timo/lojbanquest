@@ -14,9 +14,31 @@ session = sessionmaker()()
 
 roomseed = u"pinka"
 
+V = "[uiaeoy]"
+C = "[bcdfgjklmnoprstvxz]"
+
+r = lambda v: (v, re.compile("^" + v.replace("V", V).replace("C", C) + "$"))
+
+realms = [r("V"),
+          r("V'V"),
+          r("VV"),
+          r("CV"),
+          r("CVV"),
+          r("CV'V"),
+          r("CCVCV"),
+          r("CVCCV")]
+
+class RealmMismatchException(Exception): pass
+
+def realm(w):
+    for r, m in realms:
+        if m.match(w):
+            return r
+    raise RealmMismatchException(w, m)
+
 # citymap: city->rooms
 # reverse citymap: room->city
-def makeWorldGraph(outfile = "world.dot", limiter = None, citymap = {}, reversecitymap = {}):
+def makeWorldGraph(outfile = "world.dot", limiter = None, citymap = {}, reversecitymap = {}, colorize = False):
     if limiter:
         print outfile, [a.name for a in limiter]
     else:
@@ -291,6 +313,7 @@ def make_rooms():
 
         room = Room()
         room.name = gismu.word
+        room.realm = realm(gismu.word)
         session.add(room)
 
 def connect_rooms():
@@ -316,6 +339,8 @@ def connect_rooms():
 
         for other in adjacentrooms:
             door = Door()
+            if theroom.realm != other.realm:
+                door.locked = random.choice([True, False])
             door.room_a = theroom
             door.room_b = other
             session.add(door)

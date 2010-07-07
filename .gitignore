@@ -15,3 +15,4 @@ data/quest.db
 lib/
 bin/
 include/
+dist/

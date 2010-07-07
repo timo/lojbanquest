@@ -91,14 +91,15 @@ class RoomDisplay(object):
                 if other.name < room.name and other in crawl:
                     if other.realm != room.realm:
                         door = session.query(Door).filter(and_(Door.room_a_id.in_([other.name, room.name]), Door.room_b_id.in_([other.name, room.name]))).all()
-                        if door[0].locked:
-                            arrow = "oboxinv"
+                        if len(door) > 0 and door[0].locked:
+                            arrow = "obox"
                         else:
-                            arrow = "boxinv"
+                            arrow = "box"
                     else:
-                        arrow = "inv"
+                        arrow = ""
                     headtail = " "
                     if other.city != room.city:
+                        arrow = arrow + "div"
                         if other.city is not None:
                             headtail += 'arrowhead="%s" ' % arrow
                         if room.city is not None:
@@ -110,7 +111,7 @@ class RoomDisplay(object):
                         else:
                             headtail += 'dir="forward"'
                     else:
-                        if arrow != "inv":
+                        if arrow != "":
                             headtail = 'dir="forward" arrowhead="%s"' % (arrow)
                     if headtail != "":
                         headtail = "[" + headtail + "]"

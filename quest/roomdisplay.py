@@ -3,10 +3,12 @@ from __future__ import absolute_import
 import os
 from subprocess import Popen, PIPE
 from nagare import presentation, component, state, var
-from quest.models import Room
+from quest.models import Room, Door
 from quest.monster import *
 import pkg_resources
 import re
+
+from sqlalchemy.sql.expression import and_, or_
 
 from elixir import session
 
@@ -18,16 +20,26 @@ class RoomDisplay(object):
         self.prev = room
         self.enterRoom(room)
 
-    map_cache_path = lambda self, room, frm, typ: pkg_resources.resource_filename("quest", "../cache/%s_%s.%s" % (room, frm, typ))
+    def map_cache_path(self, room, frm, typ):
+        """generate a path for a cache image from the current room, where we come frm and what typ of file we want (alternatively put %s in typ)"""
+        
+        # scan for lockable doors
+        locks = "_"
 
-    def create_map(self):
-        img_path = self.map_cache_path(self.room.name, self.prev, "png")
-        map_path = self.map_cache_path(self.room.name, self.prev, "map")
+        rooms = [room.name for room in self.crawl_for_map(self.room)]
+        doors = session.query(Door).filter(and_(Door.room_a_id.in_(rooms), Door.room_b_id.in_(rooms))).order_by(Door.room_a_id).all()
+        for door in doors:
+            if door.room_a.realm != door.room_b.realm:
+                locks += "l" if door.locked else "o"
 
+        if locks == "_": locks = ""
 
-        crawl = [self.room]
+        return pkg_resources.resource_filename("quest", "../cache/%s_%s%s.%s" % (room.name, frm.name, locks, typ))
+
+    def crawl_for_map(self, start):
+        crawl = [start]
         add = []
-        for i in range(2 if len(self.room.name) == 5 else 1):
+        for i in range(2 if len(start.name) == 5 else 1):
             for room in crawl:
                 for reached in room.doors:
                     if reached not in crawl and reached not in add:
@@ -35,7 +47,18 @@ class RoomDisplay(object):
             crawl.extend(add)
             add = []
 
-        dotproc = Popen(["neato", "-Tpng", "-o" + img_path, "-Tcmapx_np", "-o" + map_path, "/dev/stdin"], stdin=PIPE)
+        return crawl
+
+    def create_map(self):
+        path = self.map_cache_path(self.room.name, self.prev, "%s")
+        img_path = path % ("png")
+        map_path = path % ("map")
+        dot_path = path % ("dot")
+
+        crawl = self.crawl_for_map(self.room)
+
+        dotproc = Popen(["neato", "-Tpng", "-o" + img_path, "-Tcmapx_np", "-o" + map_path, "-Tcanon", "-o", dot_path,  "/dev/stdin"], stdin=PIPE)
+        #dotproc = Popen(["cat"], stdin=PIPE)
         dotproc.stdin.write("""graph tersistuhas {
     graph [overlap=false bgcolor="transparent" model=circuit]
     node [shape=none fontsize=7]
@@ -66,19 +89,32 @@ class RoomDisplay(object):
             
             for other in room.doors:
                 if other.name < room.name and other in crawl:
+                    if other.realm != room.realm:
+                        door = session.query(Door).filter(and_(Door.room_a_id.in_([other.name, room.name]), Door.room_b_id.in_([other.name, room.name]))).all()
+                        if door[0].locked:
+                            arrow = "oboxinv"
+                        else:
+                            arrow = "boxinv"
+                    else:
+                        arrow = "inv"
                     headtail = " "
                     if other.city != room.city:
                         if other.city is not None:
-                            headtail += 'arrowhead="inv" '
+                            headtail += 'arrowhead="%s" ' % arrow
                         if room.city is not None:
-                            headtail += 'arrowtail="inv" '
+                            headtail += 'arrowtail="%s" ' % arrow
                         if room.city is not None and other.city is not None:
                             headtail += 'dir="both" '
                         elif room.city is not None:
                             headtail += 'dir="back"'
                         else:
                             headtail += 'dir="forward"'
-                    dotproc.stdin.write("""        "%(this)s" -- "%(other)s" [%(ht)s]\n""" % {"this": room.name, "other": other.name, "ht": headtail})
+                    else:
+                        if arrow != "inv":
+                            headtail = 'dir="forward" arrowhead="%s"' % (arrow)
+                    if headtail != "":
+                        headtail = "[" + headtail + "]"
+                    dotproc.stdin.write("""        "%(this)s" -- "%(other)s" %(ht)s\n""" % {"this": room.name, "other": other.name, "ht": headtail})
         
         dotproc.stdin.write("""    } }""")
 

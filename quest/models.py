@@ -26,6 +26,9 @@ class Door(Base):
     room_a = relationship("Room", primaryjoin="Door.room_a_id == Room.name")
     room_b = relationship("Room", primaryjoin="Door.room_b_id == Room.name")
 
+    def __repr__(self):
+        return u'<Door between %s %s>' % (self.room_a_id, self.room_b_id)
+
 class Room(Base):
     __tablename__ = "Room"
 

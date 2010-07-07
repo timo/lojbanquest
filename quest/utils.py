@@ -338,12 +338,15 @@ def connect_rooms():
             adjacentrooms = session.query(Room).filter(cmavoStep(theroom.name))
 
         for other in adjacentrooms:
-            door = Door()
-            if theroom.realm != other.realm:
-                door.locked = random.choice([True, False])
-            door.room_a = theroom
-            door.room_b = other
-            session.add(door)
+            if other.name < theroom.name:
+                door = Door()
+                if theroom.realm != other.realm:
+                    door.locked = random.choice([True, False])
+                else:
+                    door.locked = False
+                door.room_a = theroom
+                door.room_b = other
+                session.add(door)
 
 def connect_other_continent(rooms):
     print
@@ -364,8 +367,13 @@ def connect_other_continent(rooms):
         
         for other in adjacentrooms:
             if other not in rooms: continue # only intracontinental connections allowed
-            if other not in theroom.doors:
-                theroom.doors.append(other)
+            if other.name < theroom.name and other not in theroom.doors:
+                door = Door()
+                door.room_a = theroom
+                door.room_b = other
+                if theroom.realm != other.realm:
+                    door.locked = random.choice([True, False])
+                session.add(door)
 
         num += 1
     print "other continent has %d rooms." % num
@@ -427,16 +435,11 @@ def cut_doors(maxdoornum):
             killedcount += len(kills)
 
             for k in kills:
-                try:
-                    if k != theroom:
+                if k != theroom:
+                    try:
                         k.doors.remove(theroom)
+                    except:
                         theroom.doors.remove(k)
-                except Exception, e:
-                    print
-                    print e
-                    print theroom.name
-                    print k.name
-                    print
     print "killed %d connections in total." % killedcount
 
 def generate_world():
@@ -483,7 +486,6 @@ def generate_world():
     print
 
     pruned = prune_rooms([roomseed])
-    print len(pruned), [room.name for room in pruned]
 
     print
     print "Generating graphviz file."
@@ -547,6 +549,7 @@ def populate_db():
     makeWorldGraph(outfile="world_cities.dot", citymap=dict(acceptedcities))
 
     session.commit()
+
 def random_rooms():
     num = session.query(Room).count()
     nums = range(num)

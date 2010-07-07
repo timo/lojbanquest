@@ -1,10 +1,14 @@
+from __future__ import absolute_import
+
 import os
 from subprocess import Popen, PIPE
 from nagare import presentation, component, state, var
-import models
-from monster import *
+from quest.models import Room
+from quest.monster import *
 import pkg_resources
 import re
+
+from elixir import session
 
 class RoomDisplay(object):
     """This class encapsulates many Components that build up the GUI that
@@ -84,6 +88,7 @@ class RoomDisplay(object):
 
         return img_path, map_path
 
+
     def get_map_image(self):
         try:
             cached = open(self.map_cache_path(self.room.name, self.prev, "png"), "r")
@@ -96,6 +101,7 @@ class RoomDisplay(object):
         imgdata = open(img_path, "r").read()
 
         return imgdata
+
 
     def get_map_map(self):
         try:
@@ -110,6 +116,7 @@ class RoomDisplay(object):
 
         return mapdata
 
+
     def enterRoom(self, room):
         try:
             self.prev = self.room
@@ -118,7 +125,7 @@ class RoomDisplay(object):
         if isinstance(room, models.Room):
             self.room = room
         else:
-            self.room = models.Room.get(room)
+            self.room = session.query(Room).get(room)
         
         self.monsters = component.Component(Monsters(self.gs))
         self.monsters.o.addMonster(component.Component(Monster(self.gs)))
@@ -126,6 +133,7 @@ class RoomDisplay(object):
         self.gs.enterRoom(self.room)
 
         print "entered room", self.room
+
 
 @presentation.render_for(RoomDisplay)
 def roomdisplay_render(self, h, binding, *args):

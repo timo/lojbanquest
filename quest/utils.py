@@ -6,8 +6,11 @@ import re
 from sqlalchemy import or_, and_
 import sqlalchemy.orm.exc 
 import random
+from sqlalchemy.orm import sessionmaker
 
 import pkg_resources
+
+session = sessionmaker()()
 
 roomseed = u"pinka"
 
@@ -35,6 +38,7 @@ def makeWorldGraph(outfile = "world.dot", limiter = None, citymap = {}, reversec
             node [fontcolor=black shape=round fontsize=14]\n""" % k)
             
             for room in v:
+                
                 out.write('         "%s"\n' % room.name)
 
             out.write("""    }\n""")
@@ -42,7 +46,7 @@ def makeWorldGraph(outfile = "world.dot", limiter = None, citymap = {}, reversec
     out.write("""  subgraph "cmavo" {
     node [fontcolor=blue]\n""")
 
-    for room in Room.query.order_by(Room.name):
+    for room in session.query(Room).order_by(Room.name):
         if len(room.name) == 5: continue
         if limiter and room not in limiter: continue
         out.write('    "%s"\n' % room.name)
@@ -51,7 +55,7 @@ def makeWorldGraph(outfile = "world.dot", limiter = None, citymap = {}, reversec
   subgraph "gismu" {
     node [fontcolor=red]\n""")
 
-    for room in Room.query.order_by(Room.name):
+    for room in session.query(Room).order_by(Room.name):
         if len(room.name) != 5: continue
         if limiter and room not in limiter: continue
         if len(room.doors) == 0:
@@ -64,7 +68,7 @@ def makeWorldGraph(outfile = "world.dot", limiter = None, citymap = {}, reversec
     out.write("""}  subgraph "cmavo" {
     node [fontcolor=blue]\n""")
 
-    for room in Room.query.order_by(Room.name):
+    for room in session.query(Room).order_by(Room.name):
         if len(room.name) == 5: continue
         if limiter and room not in limiter: continue
         if len(room.doors) == 0:
@@ -178,7 +182,7 @@ def populate_valsi():
 
     def make_or_get_selmaho(selmaho):
         try:
-            sm = Selmaho.query.filter_by(selmaho = selmaho).one()
+            sm = session.query(Selmaho).filter_by(selmaho = selmaho).one()
         except sqlalchemy.orm.exc.NoResultFound:
             sm = Selmaho()
             sm.selmaho = selmaho
@@ -240,7 +244,7 @@ def populate_valsi():
 
         selmaho = unicode(valsi[11:20].strip())
         
-        oldval = WordCard.query.filter_by(word = val)
+        oldval = session.query(WordCard).filter_by(word = val)
 
         if oldval.count() != 0:
             ov = oldval.one()
@@ -268,7 +272,7 @@ def populate_valsi():
         if "*" in selmaho:
             continue
         try:
-            WordCard.query.get(word).rank = rank
+            session.query(WordCard).get(word).rank = rank
             rank += 1
         except:
             print "could not set rank for word", valsi.split()[0]
@@ -277,9 +281,9 @@ count = 0
 def make_rooms():
     global count
     num = 0
-    count = WordCard.query.count()
+    count = session.query(WordCard).count()
 
-    for gismu in WordCard.query.order_by(WordCard.word):
+    for gismu in session.query(WordCard).order_by(WordCard.word):
         num += 1
         # only print every 10th line
         if num % 10 == 0:
@@ -287,15 +291,16 @@ def make_rooms():
 
         room = Room()
         room.name = gismu.word
+        session.add(room)
 
 def connect_rooms():
     global count
     num = 0
 
-    for theroom in Room.query.order_by(Room.name):
+    for theroom in session.query(Room).order_by(Room.name):
         num += 1
         
-        rafsi = WordCard.query.filter(WordCard.word == theroom.name).one().rafsi.split()
+        rafsi = session.query(WordCard).filter(WordCard.word == theroom.name).one().rafsi.split()
         
         if num % 10 == 0: # only every 10th one.
             print "\r(% 5i/% 5i) %s - %s                          " % (num, count, theroom.name, rafsi),
@@ -303,18 +308,17 @@ def connect_rooms():
         # is this a gismu or is this a rafsi?
 
 
-        #if WordCard.query.filter(WordCard.word == theroom.name).one().selmaho.selmaho == "GISMU":
         if len(theroom.name) == 5:
-            adjacentrooms = Room.query.filter(or_(likeLevenOne(theroom.name),
-                                                  Room.name.in_(rafsi)))
+            adjacentrooms = session.query(Room).filter(or_(likeLevenOne(theroom.name),
+                                                           Room.name.in_(rafsi)))
         else:
-            adjacentrooms = Room.query.filter(cmavoStep(theroom.name))
+            adjacentrooms = session.query(Room).filter(cmavoStep(theroom.name))
 
         for other in adjacentrooms:
-            if other not in theroom.doors:
-                theroom.doors.append(other)
-            if theroom not in other.doors:
-                other.doors.append(theroom)
+            door = Door()
+            door.room_a = theroom
+            door.room_b = other
+            session.add(door)
 
 def connect_other_continent(rooms):
     print
@@ -331,14 +335,12 @@ def connect_other_continent(rooms):
         if num % 10 == 0: # only every 10th one.
             print "\r(% 5i/% 5i) %s                               " % (num, count, theroom.name),
         
-        adjacentrooms = Room.query.filter(likeLevenTwo(theroom.name))
+        adjacentrooms = session.query(Room).filter(likeLevenTwo(theroom.name))
         
         for other in adjacentrooms:
             if other not in rooms: continue # only intracontinental connections allowed
             if other not in theroom.doors:
                 theroom.doors.append(other)
-            if theroom not in other.doors:
-                other.doors.append(theroom)
 
         num += 1
     print "other continent has %d rooms." % num
@@ -347,7 +349,7 @@ known = []
 def prune_rooms(roomseeds):
     global known
     known = []
-    look_at = [Room.get_by(name = roomseed) for roomseed in roomseeds]
+    look_at = [session.query(Room).get(roomseed) for roomseed in roomseeds]
 
     while len(look_at) > 0:
         ther = look_at.pop()
@@ -359,7 +361,7 @@ def prune_rooms(roomseeds):
 
     toprune = []
 
-    for theroom in Room.query.order_by(Room.name):
+    for theroom in session.query(Room).order_by(Room.name):
         if theroom not in known:
             toprune.append(theroom)
 
@@ -378,7 +380,7 @@ def cut_doors(maxdoornum):
 
     killedcount = 0
 
-    for theroom in Room.query.order_by(Room.name):
+    for theroom in session.query(Room).order_by(Room.name):
         num += 1
         dnum = len(theroom.doors)
         
@@ -444,12 +446,12 @@ def generate_world():
     print "connecting the two continents"
     print
 
-    bridge = Room.get("y'y")
-    p1 = Room.get("kadno")
-    p2 = Room.get("frica")
+    bridge = session.query(Room).get("y'y")
+    p1 = session.query(Room).get("kadno")
+    p2 = session.query(Room).get("frica")
     bridge.doors.extend([p1, p2])
     p1.doors.append(bridge)
-    p2.doors.append(bridge)
+    #p2.doors.append(bridge)
 
     print
     print "finding left-over unreachable rooms"
@@ -519,16 +521,17 @@ def populate_db():
 
     makeWorldGraph(outfile="world_cities.dot", citymap=dict(acceptedcities))
 
+    session.commit()
 def random_rooms():
-    num = Room.query.count()
+    num = session.query(Room).count()
     nums = range(num)
     random.shuffle(nums)
     for num in nums:
-        yield Room.query.offset(num).first()
+        yield session.query(Room).offset(num).first()
 
 class CityCrawler(object):
     def __init__(self, startroom):
-        self.visitedrooms = [Room.get_by(name=startroom)]
+        self.visitedrooms = [session.query(Room).get(startroom)]
 
     def crawl(self):
         self.step_one()

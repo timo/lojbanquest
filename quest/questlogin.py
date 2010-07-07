@@ -2,7 +2,7 @@ from __future__ import absolute_import
 
 from nagare import presentation, var, state
 from elixir import *
-from quest import models
+from quest.models import Player, Room, WordCard
 from random import shuffle, randint
 
 class QuestLogin(object):
@@ -10,7 +10,7 @@ class QuestLogin(object):
         self.message = state.stateless(var.Var(""))
 
     def login(self, username, password, binding):
-        po = models.Player.query.get(username())
+        po = session.query(Player).get(username())
         if not po:
             self.message("No such user. Try registering instead.")
         elif po.password != password():
@@ -21,14 +21,16 @@ class QuestLogin(object):
 
     def register(self, username, password, binding):
         # see if there are duplicate players.
-        if models.Player.query.get(username()):
+        if session.query(Player).get(username()):
             self.message("A player with that username already exists.")
             return
 
         # create the player object
-        np = models.Player(username = username(), password = password())
-        np.position = models.Room.query.get(u"pensi")
-        words = list(models.WordCard.query.order_by(models.WordCard.rank).limit(50))
+        np = Player(username = username(), password = password())
+        np.position = session.query(Room).get(u"pensi")
+        session.add(np)
+
+        words = list(session.query(WordCard).order_by(WordCard.rank).limit(50))
         shuffle(words)
 
         maxgismu = np.gismubag

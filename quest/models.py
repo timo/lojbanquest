@@ -1,88 +1,138 @@
-from elixir import *
-from sqlalchemy import MetaData
+from sqlalchemy import MetaData, Column, Unicode, Float, Boolean, ForeignKey, UnicodeText, Integer, DateTime
+from sqlalchemy.orm import relationship
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.sql.expression import or_
 import datetime
+from elixir import *
 
-__metadata__ = MetaData()
+Base = declarative_base()
+__metadata__ = Base.metadata
 
-class City(Entity):
-    rooms    = OneToMany("Room")
-    name     = Field(Unicode(6), primary_key=True)
+class City(Base):
+    __tablename__ = "City"
+    name     = Column(Unicode(6), primary_key=True)
+    rooms    = relationship("Room", backref="city")
 
     def __repr__(self):
         return u'<City "%s" with %d rooms>' % (self.name, len(self.rooms))
 
-class Room(Entity):
-    name     = Field(Unicode(6), primary_key=True)
-    doors    = ManyToMany("Room")
-    city     = ManyToOne("City")
+class Door(Base):
+    __tablename__ = "Doors"
+
+    locked = Column(Boolean)
+
+    room_a_id = Column(Unicode(6), ForeignKey("Room.name"), nullable=False, primary_key=True)
+    room_b_id = Column(Unicode(6), ForeignKey("Room.name"), nullable=False, primary_key=True)
+    room_a = relationship("Room", primaryjoin="Door.room_a_id == Room.name")
+    room_b = relationship("Room", primaryjoin="Door.room_b_id == Room.name")
+
+class Room(Base):
+    __tablename__ = "Room"
+
+    name      = Column(Unicode(6), primary_key=True)
+    city_name = Column(Unicode(6), ForeignKey("City.name"), nullable=True)
+
+    doors     = relationship("Room", secondary=Door.__table__,
+                             primaryjoin=or_(name == Door.room_a_id, name == Door.room_b_id),
+                             secondaryjoin=or_(name == Door.room_a_id, name == Door.room_b_id),
+                             viewonly=True)
 
     def __repr__(self):
         return u'<Room "%s"%s %d doors>' % (self.name, 
                                             ' in city "%s"' % self.city.name if self.city is not None else "",
                                             len(self.doors))
 
-class Selmaho(Entity):
+class Selmaho(Base):
     """This class is used for letting game admins/BPFK members assign bonuses for selmaho"""
-    selmaho  = Field(Unicode(6), primary_key=True)
-    multi    = Field(Float)
+    __tablename__ = "selmaho"
+
+    selmaho  = Column(Unicode(6), primary_key=True)
+    multi    = Column(Float)
+    words    = relationship("WordCard", backref="selmaho")
 
     def __repr__(self):
         return "<Selmaho '%s' multiplier %r>" % (self.selmaho, self.multi)
 
-class WordCard(Entity):
-    word       = Field(Unicode(6), primary_key=True)
-    gloss      = Field(Unicode(32))
-    definition = Field(UnicodeText)
-    selmaho    = ManyToOne(Selmaho)
-    rafsi      = Field(Unicode(13))
-    rank       = Field(Integer)
+class WordCard(Base):
+    __tablename__ = "wordcard"
+
+    word       = Column(Unicode(6), primary_key=True)
+    gloss      = Column(Unicode(32))
+    definition = Column(UnicodeText)
+    selmaho_name = Column(Unicode(6), ForeignKey("selmaho.selmaho"))
+    rafsi      = Column(Unicode(13))
+    rank       = Column(Integer)
 
     def __repr__(self):
         return '<Word "%s">' % (self.word)
 
-class Player(Entity):
+class BagEntry(Base):
+    __tablename__ = "bagentry"
+    
+    player_name = Column(Unicode(16), ForeignKey("player.username"), primary_key=True)
+    player      = relationship("Player")
+    word_word   = Column(Unicode(6), ForeignKey("wordcard.word"), primary_key=True)
+    word        = relationship("WordCard")
+    count       = Column(Integer)
+
+class Player(Base):
     """This class represents a player as well as a session (one session per player)"""
-    username  = Field(Unicode(64), primary_key=True)
-    password  = Field(Unicode(40)) # sha1sum of the password
+    __tablename__ = "player"
+
+    username  = Column(Unicode(16), primary_key=True)
+    password  = Column(Unicode(40)) # sha1sum of the password
     
-    join_date = Field(DateTime, default=datetime.datetime.now)
+    join_date = Column(DateTime, default=datetime.datetime.now)
 
-    status    = Field(Integer)
-    login     = Field(DateTime)
+    status    = Column(Integer)
+    login     = Column(DateTime)
 
-    position  = ManyToOne(Room)
+    position_name = Column(Unicode(6), ForeignKey("Room.name"))
+    position  = relationship(Room)
     
-    health    = Field(Integer, default=1000)
-    maxHealth = Field(Integer, default=1000)
-    gold      = Field(Integer, default=0)
-    fluency   = Field(Integer, default=1)
-    cmavobag  = Field(Integer, default=100)
-    gismubag  = Field(Integer, default=50)
-    maxsenlen = Field(Integer, default=10)
-    dexterity = Field(Integer, default=1)
+    health    = Column(Integer, default=1000)
+    maxHealth = Column(Integer, default=1000)
+    gold      = Column(Integer, default=0)
+    fluency   = Column(Integer, default=1)
+    cmavobag  = Column(Integer, default=100)
+    gismubag  = Column(Integer, default=50)
+    maxsenlen = Column(Integer, default=10)
+    dexterity = Column(Integer, default=1)
 
-    bag       = ManyToMany(WordCard)
+    bag       = relationship(WordCard, secondary=BagEntry.__table__,
+                             primaryjoin = username == BagEntry.player_name)
 
     def __repr__(self):
         return u'<Player "%s" (%sline) in room "%s">' % (self.username, u"On" if self.status == 1 else u"Off", self.position.name)
 
-class Monster(Entity):
-    name = Field(Unicode(64))
+class Monster(Base):
+    __tablename__ = "monster"
+    
+    id = Column(Integer, primary_key=True)
 
-    health = Field(Integer, default = 100)
+    name = Column(Unicode(32))
 
-    position = ManyToOne(Room)
+    health = Column(Integer, default = 100)
+
+    position_name = Column(Unicode(6), ForeignKey("Room.name"))
+    position = relationship(Room)
 
 ### things for the treasure chest game and combat
 
-class HumanSentence(Entity):
-    text     = Field(UnicodeText, primary_key=True)
-    author   = ManyToOne(Player) # if someone uses an "old" sentence, the damage will be halved and it will not be recorded again.
-    score    = Field(Integer)
-    reviews  = Field(Integer)
+class HumanSentence(Base):
+    __tablename__ = "humansentence"
 
-class WordFamiliarity(Entity):
+    text     = Column(UnicodeText, primary_key=True)
+    authorname = Column(Unicode(16), ForeignKey("player.username")) # if someone uses an "old" sentence, the damage will be halved and it will not be recorded again.
+    author   = relationship(Player)
+    score    = Column(Integer)
+    reviews  = Column(Integer)
+
+class WordFamiliarity(Base):
+    __tablename__ = "wordfamiliarity"
     """This class records, wether or not a player has seen a word before."""
-    player   = ManyToOne(Player)
-    word     = ManyToOne(WordCard)
-    count    = Field(Integer)
+    player_name = Column(Unicode(16), ForeignKey("player.username"), primary_key=True)
+    player = relationship(Player)
+    word_word  = Column(Unicode(6), ForeignKey("wordcard.word"), primary_key=True)
+    word = relationship(WordCard)
+    count    = Column(Integer)

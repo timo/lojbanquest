@@ -3,9 +3,9 @@ from __future__ import with_statement, absolute_import
 from nagare import presentation, component, state, var
 from nagare.namespaces import xhtml
 
-from elixir import *
+from elixir import session
 
-from quest import models
+from quest.models import Player as PlayerModel, Room, WordCard 
 import random
 
 # gather models
@@ -20,7 +20,7 @@ class GameSession(object):
         self.model = state.stateless(var.Var("login"))
 
     def startGame(self, player):
-        self.player =  models.Player.get(player)
+        self.player =  session.query(PlayerModel).get(player)
 
         self.playerBox = component.Component(Player(self.player, self))
         self.roomDisplay = component.Component(RoomDisplay(self.player.position, self))
@@ -28,10 +28,10 @@ class GameSession(object):
         self.model("game")
 
     def enterRoom(self, room):
-        if isinstance(room, models.Room):
+        if isinstance(room, Room):
             self.player.position = room
         else:
-            self.player.position = models.Room.get(room)
+            self.player.position = session.query(Room).get(room)
 
 class Wordbag(object):
     """This class holds the words that the player posesses."""
@@ -41,7 +41,7 @@ class Wordbag(object):
     def diceWords(self):
         self.words = {}
 
-        words = list(models.WordCard.query.order_by(models.WordCard.word))
+        words = list(session.query(WordCard).order_by(WordCard.word).all())
         sum = 0
         while sum < 100:
             num = random.randint(1, 10)

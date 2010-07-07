@@ -406,7 +406,7 @@ def delete_rooms(rooms):
 
 def cut_doors(maxdoornum):
     global known
-    weight = lambda num: max((9 - num) ** 2, 1)
+    weight = lambda num: (num - 1) ** 2
 
     count = len(known)
     num = 0
@@ -436,10 +436,10 @@ def cut_doors(maxdoornum):
 
             for k in kills:
                 if k != theroom:
-                    try:
-                        k.doors.remove(theroom)
-                    except:
-                        theroom.doors.remove(k)
+                    door = session.query(Door).filter(and_(Door.room_a_id.in_([k.name, theroom.name]), Door.room_b_id.in_([k.name, theroom.name]))).all()
+                    if len(door) > 0:
+                        session.delete(door[0])
+    
     print "killed %d connections in total." % killedcount
 
 def generate_world():
@@ -460,8 +460,37 @@ def generate_world():
     print "Seeding island from '%s'." % (roomseed, )
     print
 
-    connect_other_continent(prune_rooms([roomseed]))
+    othercontinent = prune_rooms([roomseed])
+    connect_other_continent(othercontinent)
 
+
+    print
+    print "connecting the two continents"
+    print
+
+    bridge = session.query(Room).get("y'y")
+    p1 = session.query(Room).get(random.choice(othercontinent).name)
+    p2 = session.query(Room).get("pensi")
+    
+    a = Door()
+    a.room_a = bridge
+    a.room_b = p1
+    session.add(a)
+
+    b = Door()
+    b.room_a = bridge
+    b.room_b = p2
+    session.add(b)
+
+    session.commit()
+    
+    print
+    print "finding left-over unreachable rooms"
+    print
+
+    pruned = prune_rooms([roomseed])
+    print "prune %d rooms" % len(pruned)
+    
     maxdoornum = 5
     print
     print
@@ -470,22 +499,6 @@ def generate_world():
 
     cut_doors(maxdoornum)
 
-    print
-    print "connecting the two continents"
-    print
-
-    bridge = session.query(Room).get("y'y")
-    p1 = session.query(Room).get("kadno")
-    p2 = session.query(Room).get("frica")
-    bridge.doors.extend([p1, p2])
-    p1.doors.append(bridge)
-    #p2.doors.append(bridge)
-
-    print
-    print "finding left-over unreachable rooms"
-    print
-
-    pruned = prune_rooms([roomseed])
 
     print
     print "Generating graphviz file."
@@ -512,10 +525,10 @@ def populate_db():
             room = randrms.next()
             if len(room.name) == 5:
                 city = find_city(room.name)
-                if len(city) > maxsize:
-                    maxsize = len(city)
-                if len(city) > 15:
+                if len(city) > 15 and len(city) < 200:
                     cities.append((room.name, city))
+                    if len(city) > maxsize:
+                        maxsize = len(city)
     except StopIteration:
         print "all rooms exhausted"
 

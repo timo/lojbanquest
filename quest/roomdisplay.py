@@ -33,7 +33,7 @@ class RoomDisplay(object):
 
         if locks == "_": locks = ""
 
-        return pkg_resources.resource_filename("quest", "../cache/%s_%s%s.%s" % (room.name, frm.name, locks, typ))
+        return pkg_resources.resource_filename("quest", "../cache/%s_%s%s.%s" % (room, frm.name, locks, typ))
 
     def crawl_for_map(self, start):
         crawl = [start]

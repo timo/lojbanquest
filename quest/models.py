@@ -41,6 +41,10 @@ class Room(Base):
                              primaryjoin=or_(name == Door.room_a_id, name == Door.room_b_id),
                              secondaryjoin=or_(name == Door.room_a_id, name == Door.room_b_id),
                              viewonly=True)
+    
+    doorobjs  = relationship("Door",
+                             primaryjoin=or_(name == Door.room_a_id, name == Door.room_b_id),
+                             viewonly=True)
 
     def __repr__(self):
         return u'<Room "%s"%s %d doors>' % (self.name, 

@@ -26,7 +26,7 @@ class RoomDisplay(object):
         # scan for lockable doors from the room we are currently in
         locks = "_"
 
-        doors = session.query(Door).filter(or_(Door.room_a_id == room, Door.room_b_id == room)).order_by(Door.room_a_id).all()
+        doors = session.query(Room).get(room).doorobjs
         for door in doors:
             if door.room_a.realm != door.room_b.realm:
                 locks += "l" if door.locked else "o"

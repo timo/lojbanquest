@@ -23,11 +23,10 @@ class RoomDisplay(object):
     def map_cache_path(self, room, frm, typ):
         """generate a path for a cache image from the current room, where we come frm and what typ of file we want (alternatively put %s in typ)"""
         
-        # scan for lockable doors
+        # scan for lockable doors from the room we are currently in
         locks = "_"
 
-        rooms = [room.name for room in self.crawl_for_map(self.room)]
-        doors = session.query(Door).filter(and_(Door.room_a_id.in_(rooms), Door.room_b_id.in_(rooms))).order_by(Door.room_a_id).all()
+        doors = session.query(Door).filter(or_(Door.room_a_id == room, Door.room_b_id == room)).order_by(Door.room_a_id).all()
         for door in doors:
             if door.room_a.realm != door.room_b.realm:
                 locks += "l" if door.locked else "o"
@@ -89,7 +88,7 @@ class RoomDisplay(object):
             
             for other in room.doors:
                 if other.name < room.name and other in crawl:
-                    if other.realm != room.realm:
+                    if other.realm != room.realm and (other == self.room or room == self.room): # only show doors next to the room we're in.
                         door = session.query(Door).filter(and_(Door.room_a_id.in_([other.name, room.name]), Door.room_b_id.in_([other.name, room.name]))).all()
                         if len(door) > 0 and door[0].locked:
                             arrow = "obox"

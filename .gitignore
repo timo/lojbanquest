@@ -6,7 +6,9 @@
 # *~
 *pyc
 *dot
-cache/*
+cache/*png
+cache/*dot
+cache/*map
 *egg*
 data/*txt
 data/quest.db

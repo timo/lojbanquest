@@ -174,6 +174,7 @@ class RoomDisplay(object):
                 self.gs.enterRoom(nextroom, force=True)
             else:
                 print "nay :("
+                return
         
         self.room = nextroom
         self.prev = prevroom

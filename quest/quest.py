@@ -44,8 +44,11 @@ class GameSession(object):
         # find the door object. if it's locked, don't let us through, if it's lockable, shut it behind us.
         door = oldpos.doorTo(newposition)
 
-        if door.locked and door.lockable() and not force:
-            raise DoorLockedException
+        if door.locked and door.lockable():
+            if force:
+                door.locked = False # unlock it so that one person can get through behind us
+            else:
+                raise DoorLockedException
         if door.lockable() and not force:
             door.locked = True # TODO: delay this by a few seconds, so that party members can come along?
 

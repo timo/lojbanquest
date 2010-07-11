@@ -234,7 +234,7 @@ gotorex = re.compile("goto/([^\"]+)")
 
 @presentation.render_for(RoomDisplay, model="map")
 def render_map(self, h, binding, *args):
-    h << h.img(usemap="tersistuhas").action(self.get_map_image)
+    h << h.img(usemap="#tersistuhas").action(self.get_map_image)
 
     mapstr = self.get_map_map()
 

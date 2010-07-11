@@ -29,8 +29,7 @@ class RoomDisplay(object):
 
         doors = session.query(Room).get(room).doorobjs
         for door in doors:
-            if door.room_a.realm != door.room_b.realm:
-                locks += "l" if door.locked else "o"
+            locks += "l" if door.locked else "o" if door.lockable() else ""
 
         if locks == "_": locks = ""
 
@@ -202,9 +201,9 @@ def roomdisplay_render(self, h, binding, *args):
         h << "Doors:"
         with h.ul():
             print "self.room:", self.room, "self.room.doors:", self.room.doors
-            h << (h.li(door(self.room, other)) for other in self.room.doors) #if other != self.prev and other != self.room)
-            #if self.room != self.prev:
-                #h << h.li("Back: ", door(self.room, self.prev))
+            h << (h.li(door(self.room, other)) for other in self.room.doors if other != self.prev)
+            if self.room != self.prev:
+                h << h.li("Back: ", door(self.room, self.prev))
 
     return h.root
 

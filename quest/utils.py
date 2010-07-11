@@ -323,7 +323,7 @@ def connect_rooms():
     for theroom in session.query(Room).order_by(Room.name):
         num += 1
         
-        rafsi = session.query(WordCard).filter(WordCard.word == theroom.name).one().rafsi.split()
+        rafsi = session.query(WordCard.rafsi).get(theroom.name)[0].split()
         
         if num % 10 == 0: # only every 10th one.
             print "\r(% 5i/% 5i) %s - %s                          " % (num, count, theroom.name, rafsi),
@@ -436,7 +436,7 @@ def cut_doors(maxdoornum):
 
             for k in kills:
                 if k != theroom:
-                    door = session.query(Door).filter(and_(Door.room_a_id.in_([k.name, theroom.name]), Door.room_b_id.in_([k.name, theroom.name]))).all()
+                    door = theroom.doorTo(k)
                     if len(door) > 0:
                         session.delete(door[0])
     

@@ -2,8 +2,7 @@ from __future__ import with_statement, absolute_import
 
 from nagare import presentation, component, state, var
 from nagare.namespaces import xhtml
-
-from elixir import session
+from nagare.database import session
 
 from quest.models import Player as PlayerModel, Room, WordCard 
 import random

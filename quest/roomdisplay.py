@@ -3,10 +3,12 @@ from __future__ import absolute_import
 import os
 from subprocess import Popen, PIPE
 from nagare import presentation, component, state, var
-from quest.models import Room, Door
+from quest.models import Room, Door, WordCard
 from quest.monster import *
+from sqlalchemy.sql.functions import random
 import pkg_resources
 import re
+from random import shuffle
 
 from sqlalchemy.sql.expression import and_, or_
 
@@ -152,7 +154,8 @@ class RoomDisplay(object):
 
         return mapdata
 
-    def enterRoom(self, room):
+    def enterRoom(self, room, binding = None):
+        print "RoomDisplay.enterRoom %r" % (room,)
         try:
             prevroom = self.room
         except:
@@ -165,10 +168,12 @@ class RoomDisplay(object):
         try:
             self.gs.enterRoom(nextroom)
         except Exception, e:
-            print "could not go through locked door"
-            print e
-            # TODO: call an unlock component or something.
-            return
+            success = binding.call(UnlockChallenge())
+            if success:
+                print "yay"
+                self.gs.enterRoom(nextroom, force=True)
+            else:
+                print "nay :("
         
         self.room = nextroom
         self.prev = prevroom
@@ -179,15 +184,32 @@ class RoomDisplay(object):
 
         print "entered room", self.room
 
+class UnlockChallenge(object):
+    def __init__(self):
+        # select a few random words from the word cards
+        words = session.query(WordCard).order_by(random()).limit(6).all()
+
+        self.correct = words[0]
+        self.wrongs = words[1:]
+
+        self.words = words
+        shuffle(self.words)
+
+    def choose(self, word):
+        if word == self.correct:
+            return True
+        elif word in self.wrongs:
+            return False
+        else:
+            raise Exception("Word neither wrong nor correct. wtf?")
+
 @presentation.render_for(RoomDisplay)
 def roomdisplay_render(self, h, binding, *args):
     def door(from_, to):
         dooro = from_.doorTo(to)
         if dooro:
-            return h.span(h.a(to.name).action(lambda other=to: self.enterRoom(other)), "(locked)" if dooro.locked else "(unlocked)" if dooro.lockable() else "")
-        return h.span(h.a(to.name).action(lambda other=to: self.enterRoom(other)), "error! couldn't find a door object. wtf?")
-        
-        
+            return h.span(h.a(to.name).action(lambda other=to: self.enterRoom(other, binding)), "(locked)" if dooro.locked else "(unlocked)" if dooro.lockable() else "")
+        return h.span(h.a(to.name).action(lambda other=to: self.enterRoom(other, binding)), "error! couldn't find a door object. wtf?")
 
     try:
         h << self.monsters
@@ -219,7 +241,21 @@ def render_map(self, h, binding, *args):
 
     for area in mapobj.xpath("//area"):
         roomname = unicode(area.get("href").split("/")[1].replace("&#39;", "'"))
-        area.action(lambda other=roomname: self.enterRoom(other))
+        area.action(lambda other=roomname: self.enterRoom(other, binding))
 
     h << mapobj
+    return h.root
+
+@presentation.render_for(UnlockChallenge)
+def render_challenge(self, h, binding, *args):
+    with h.div():
+        h << h.span("What's the word for ", self.correct.gloss, "?")
+        with h.ul():
+            for word in self.words:
+                h << h.li(h.a(word.word).action(lambda word=word: binding.answer(self.choose(word))))
+
+    return h.root
+
+@presentation.render_for(UnlockChallenge, model="map")
+def render_challenge_with_map(self, h, binding, *args):
     return h.root

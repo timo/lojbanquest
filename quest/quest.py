@@ -28,7 +28,7 @@ class GameSession(object):
 
         self.model("game")
 
-    def enterRoom(self, room):
+    def enterRoom(self, room, force = False):
         oldpos = self.player.position
 
         if isinstance(room, Room):
@@ -44,7 +44,7 @@ class GameSession(object):
         # find the door object. if it's locked, don't let us through, if it's lockable, shut it behind us.
         door = oldpos.doorTo(newposition)
 
-        if door.locked and door.lockable():
+        if door.locked and door.lockable() and not force:
             raise DoorLockedException
         if door.lockable():
             door.locked = True # TODO: delay this by a few seconds, so that party members can come along?

@@ -13,6 +13,8 @@ from quest.roomdisplay import RoomDisplay
 from quest.monster import Monster, Monsters
 from quest.questlogin import QuestLogin
 
+class DoorLockedException(Exception): pass
+
 class GameSession(object):
     def __init__(self):
         self.loginManager = component.Component(QuestLogin())
@@ -28,10 +30,27 @@ class GameSession(object):
         self.model("game")
 
     def enterRoom(self, room):
+        oldpos = self.player.position
+
         if isinstance(room, Room):
-            self.player.position = room
+            newposition = room
         else:
-            self.player.position = session.query(Room).get(room)
+            newposition = session.query(Room).get(room)
+        
+        # when we start the game, we have no old position.
+        if oldpos == newposition:
+            print "ignoring GameSession.enterRoom."
+            return
+
+        # find the door object. if it's locked, don't let us through, if it's lockable, shut it behind us.
+        door = oldpos.doorTo(newposition)
+
+        if door.locked and door.lockable():
+            raise DoorLockedException
+        if door.lockable():
+            door.locked = True # TODO: delay this by a few seconds, so that party members can come along?
+
+        self.player.position = newposition
 
 class Wordbag(object):
     """This class holds the words that the player posesses."""

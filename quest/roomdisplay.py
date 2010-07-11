@@ -18,6 +18,7 @@ class RoomDisplay(object):
     def __init__(self, room, gs):
         self.gs = gs
         self.prev = room
+        self.room = room
         self.enterRoom(room)
 
     def map_cache_path(self, room, frm, typ):
@@ -89,11 +90,11 @@ class RoomDisplay(object):
             for other in room.doors:
                 if other.name < room.name and other in crawl:
                     if other.realm != room.realm and (other == self.room or room == self.room): # only show doors next to the room we're in.
-                        door = session.query(Door).filter(and_(Door.room_a_id.in_([other.name, room.name]), Door.room_b_id.in_([other.name, room.name]))).all()
-                        if len(door) > 0 and door[0].locked:
-                            arrow = "obox"
-                        else:
+                        door = room.doorTo(other)
+                        if door and door.locked:
                             arrow = "box"
+                        else:
+                            arrow = "obox"
                     else:
                         arrow = ""
                     headtail = " "
@@ -152,28 +153,47 @@ class RoomDisplay(object):
 
         return mapdata
 
-
     def enterRoom(self, room):
         try:
-            self.prev = self.room
+            prevroom = self.room
         except:
-            self.prev = room
+            prevroom = room
         if isinstance(room, models.Room):
-            self.room = room
+            nextroom = room
         else:
-            self.room = session.query(Room).get(room)
+            nextroom = session.query(Room).get(room)
         
+        try:
+            self.gs.enterRoom(nextroom)
+        except Exception, e:
+            print "could not go through locked door"
+            print e
+            # TODO: call an unlock component or something.
+            return
+        
+        self.room = nextroom
+        self.prev = prevroom
+
+        # TODO: just update the previous monsters component instead.
         self.monsters = component.Component(Monsters(self.gs))
         self.monsters.o.addMonster(component.Component(Monster(self.gs)))
 
-        self.gs.enterRoom(self.room)
-
         print "entered room", self.room
-
 
 @presentation.render_for(RoomDisplay)
 def roomdisplay_render(self, h, binding, *args):
-    h << self.monsters
+    def door(from_, to):
+        dooro = from_.doorTo(to)
+        if dooro:
+            return h.span(h.a(to.name).action(lambda other=to: self.enterRoom(other)), "(locked)" if dooro.locked else "(unlocked)" if dooro.lockable() else "")
+        return h.span(h.a(to.name).action(lambda other=to: self.enterRoom(other)), "error! couldn't find a door object. wtf?")
+        
+        
+
+    try:
+        h << self.monsters
+    except AttributeError:
+        pass
     if self.room.city:
         h << h.p("You are in ", h.span(self.room.name, id="roomname"), " in the city of ", h.span(self.room.city.name, id="cityname"))
     else:
@@ -181,8 +201,10 @@ def roomdisplay_render(self, h, binding, *args):
     with h.div():
         h << "Doors:"
         with h.ul():
-            h << (h.li(h.a(other.name).action(lambda other=other: self.enterRoom(other))) for other in self.room.doors if other != self.prev)
-            h << h.li("Back: ", h.a(self.prev.name).action(lambda other=self.prev: self.enterRoom(self.prev)))
+            print "self.room:", self.room, "self.room.doors:", self.room.doors
+            h << (h.li(door(self.room, other)) for other in self.room.doors) #if other != self.prev and other != self.room)
+            #if self.room != self.prev:
+                #h << h.li("Back: ", door(self.room, self.prev))
 
     return h.root
 

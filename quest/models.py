@@ -28,7 +28,13 @@ class Door(Base):
     room_b = relationship("Room", primaryjoin="Door.room_b_id == Room.name")
 
     def __repr__(self):
-        return u'<Door between %s %s>' % (self.room_a_id, self.room_b_id)
+        return u'<Door between %s %s%s>' % (self.room_a_id, self.room_b_id, ", locked" if self.locked and self.lockable() else (", open" if self.lockable() else ""))
+
+    def __contains__(self, other):
+        return other in [self.room_a, self.room_b, self.room_a_id, self.room_b_id]
+
+    def lockable(self):
+        return self.room_a.realm != self.room_b.realm
 
 class Room(Base):
     __tablename__ = "Room"
@@ -56,6 +62,14 @@ class Room(Base):
         return u'<Room "%s"%s %d doors>' % (self.name, 
                                             ' in city "%s"' % self.city.name if self.city is not None else "",
                                             len(self.doors))
+
+    def doorTo(self, other):
+        door = [door for door in self.doorobjs if other in door]
+        if len(door) == 1:
+            return door[0]
+        else:
+            print self, ".doorTo(", other, ")", self.doorobjs
+            return None
 
 class Selmaho(Base):
     """This class is used for letting game admins/BPFK members assign bonuses for selmaho"""

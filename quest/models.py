@@ -1,7 +1,8 @@
 from sqlalchemy import MetaData, Column, Unicode, Float, Boolean, ForeignKey, UnicodeText, Integer, DateTime
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, aliased
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.sql.expression import or_
+from sqlalchemy.orm.session import Session
 import datetime
 from elixir import *
 
@@ -37,11 +38,16 @@ class Room(Base):
 
     realm     = Column(Enum("V", "VV", "V'V", "CV", "CVV", "CV'V", "CVCCV", "CCVCV"))
 
-    doors     = relationship("Room", secondary=Door.__table__,
-                             primaryjoin=or_(name == Door.room_a_id, name == Door.room_b_id),
-                             secondaryjoin=or_(name == Door.room_a_id, name == Door.room_b_id),
-                             viewonly=True)
-    
+    @property
+    def doors(self):
+        session = Session.object_session(self)
+        Room2 = aliased(Room)
+        return session.query(Room2)\
+            .join(Room2.doorobjs, (Room, or_(Door.room_a_id == Room.name, Door.room_b_id == Room.name)))\
+            .filter(Room2.name != Room.name)\
+            .filter(Room.name == self.name)\
+            .all()
+
     doorobjs  = relationship("Door",
                              primaryjoin=or_(name == Door.room_a_id, name == Door.room_b_id),
                              viewonly=True)

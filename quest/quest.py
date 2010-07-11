@@ -4,7 +4,7 @@ from nagare import presentation, component, state, var
 from nagare.namespaces import xhtml
 from nagare.database import session
 
-from quest.models import Player as PlayerModel, Room, WordCard 
+from quest.models import Player as PlayerModel, Room, WordCard, BagEntry
 import random
 
 # gather models
@@ -25,8 +25,11 @@ class GameSession(object):
 
         self.playerBox = component.Component(Player(self.player, self))
         self.roomDisplay = component.Component(RoomDisplay(self.player.position, self))
+        self.spellInput = component.Component(SpellInput(self))
 
         self.model("game")
+
+        del self.loginManager
 
     def enterRoom(self, room, force = False):
         oldpos = self.player.position
@@ -79,9 +82,56 @@ class SpellInput(object):
     def __init__(self, gs):
         self.gs = gs
         self.text = var.Var()
+        self.errorcards = []
 
-    def validate(self):
-        pass
+    def cast(self, text, target=None):
+        self.text(text)
+        words = self.text().split()
+
+        cards = [session.query(WordCard).get(word) for word in words]
+
+        # make a tally for our cards so we can check if we have enough
+        cdict = {}
+        for card in cards:
+            if card in cdict:
+                cdict[card] += 1
+            else:
+                cdict[card] = 1
+
+        errorcards = []
+
+        for card, count in cdict.iteritems():
+            entry = session.query(BagEntry.count).get((self.gs.player.username, card.word))
+            if not entry:
+                errorcards.append(card.word)
+            elif entry.count < count:
+                errorcards.append(card.word)
+
+        if errorcards:
+            self.errorcards = errorcards
+            return
+
+        for card, count in cdict.iteritems():
+            entry = session.query(BagEntry).get((self.gs.player.username, card.word))
+            entry.count -= count
+            if entry.count <= 0:
+                session.delete(entry)
+
+        print cards
+        score = reduce(lambda scr, wrd: scr + wrd.rank, cards, 0)
+        print score
+        
+        self.text("")
+
+@presentation.render_for(SpellInput)
+def render_spellinput(self, h, binding, *args):
+    if self.errorcards:
+        textwords = self.text().split()
+        h << h.span(*[h.span(word, style="color: red") if word in self.errorcards else h.span(word) for word in textwords])
+    with h.form():
+        h << h.input().action(self.cast)
+
+    return h.root
 
 class Player(object):
     """This Component represents the player of the game."""
@@ -132,6 +182,7 @@ def render(self, h, *args):
         h << h.h1("Welcome to LojbanQuest!")
         h << self.playerBox
         h << self.playerBox.render(xhtml.AsyncRenderer(h), model="wordbag")
+        h << self.spellInput.render(xhtml.AsyncRenderer(h))
         h << self.roomDisplay
         h << h.div(self.roomDisplay.render(h, model="map"), style="position:absolute; right: 0; top: 0;")
     return h.root

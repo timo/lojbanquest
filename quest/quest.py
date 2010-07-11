@@ -46,7 +46,7 @@ class GameSession(object):
 
         if door.locked and door.lockable() and not force:
             raise DoorLockedException
-        if door.lockable():
+        if door.lockable() and not force:
             door.locked = True # TODO: delay this by a few seconds, so that party members can come along?
 
         self.player.position = newposition

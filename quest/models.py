@@ -90,7 +90,7 @@ class WordCard(Base):
     definition = Column(UnicodeText)
     selmaho_name = Column(Unicode(6), ForeignKey("selmaho.selmaho"))
     rafsi      = Column(Unicode(13))
-    rank       = Column(Integer)
+    rank       = Column(Integer, nullable=False)
 
     def __repr__(self):
         return '<Word "%s">' % (self.word)
@@ -102,7 +102,7 @@ class BagEntry(Base):
     player      = relationship("Player")
     word_word   = Column(Unicode(6), ForeignKey("wordcard.word"), primary_key=True)
     word        = relationship("WordCard")
-    count       = Column(Integer)
+    count       = Column(Integer, nullable=False)
 
 class Player(Base):
     """This class represents a player as well as a session (one session per player)"""

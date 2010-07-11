@@ -283,6 +283,7 @@ def populate_valsi():
             wc.definition = defi
             wc.selmaho = make_or_get_selmaho(selmaho)
             wc.rafsi = rafsi
+            wc.rank = 20
             session.add(wc)
 
     lines = pkg_resources.resource_stream("quest", "../data/big_list.txt").readlines()

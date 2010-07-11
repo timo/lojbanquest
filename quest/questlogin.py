@@ -2,7 +2,7 @@ from __future__ import absolute_import
 
 from nagare import presentation, var, state
 from elixir import *
-from quest.models import Player, Room, WordCard
+from quest.models import Player, Room, WordCard, BagEntry
 from random import shuffle, randint
 
 class QuestLogin(object):
@@ -17,7 +17,6 @@ class QuestLogin(object):
             self.message("Login failed.")
         else:
             binding.answer(username())
-         
 
     def register(self, username, password, binding):
         # see if there are duplicate players.
@@ -40,14 +39,17 @@ class QuestLogin(object):
         cmavonum = 0
         for word in words:
             if word.selmaho.selmaho == "GISMU":
-                #number = randint(0, min(5, maxgismu - gismunum))
-                number = 1
+                number = randint(0, min(5, maxgismu - gismunum))
                 gismunum += number
             else:
-                number = 1
-                #number = randint(0, min(5, maxcmavo - cmavonum))
+                number = randint(0, min(5, maxcmavo - cmavonum))
                 cmavonum += number
-            np.bag.extend([word] * number)
+            if number > 0:
+                be = BagEntry()
+                be.player = np
+                be.word = word
+                be.count = number
+                session.add(be)
 
         session.add(np)
         session.flush()

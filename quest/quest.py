@@ -133,9 +133,6 @@ class Player(object):
         self.o = player
         self.wordbag = state.stateless(Wordbag(gs))
 
-    def changeHp(self, offset):
-        self.o.hp += offset
-
 @presentation.render_for(Player)
 def player_render(self, h, binding, *args):
     with h.div(class_ = "playerbox"):
@@ -144,8 +141,6 @@ def player_render(self, h, binding, *args):
            h << "You currently have "
            h << h.span(self.o.health, id="hp")
            h << " health points."
-           h << h.a("--").action(lambda: self.changeHp(-1))
-           h << h.a("++").action(lambda: self.changeHp(+1))
 
     return h.root
 

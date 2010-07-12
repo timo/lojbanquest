@@ -100,7 +100,7 @@ class RoomDisplay(object):
                         arrow = ""
                     headtail = " "
                     if other.city != room.city:
-                        arrow = arrow + "div"
+                        arrow += "inv"
                         if other.city is not None:
                             headtail += 'arrowhead="%s" ' % arrow
                         if room.city is not None:

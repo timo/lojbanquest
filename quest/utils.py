@@ -438,8 +438,8 @@ def cut_doors(maxdoornum):
             for k in kills:
                 if k != theroom:
                     door = theroom.doorTo(k)
-                    if len(door) > 0:
-                        session.delete(door[0])
+                    if door:
+                        session.delete(door)
     
     print "killed %d connections in total." % killedcount
 

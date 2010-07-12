@@ -84,9 +84,9 @@ class RoomDisplay(object):
 
         for room in crawl:
             if room == self.room:
-                dotproc.stdin.write("""        "%(name)s" [shape=diamond fontsize=12]\n""" % {"name": room.name})
+                dotproc.stdin.write("""        "%(name)s" [shape=diamond fontsize=12 pos="0.0,0.0"]\n""" % {"name": room.name})
             elif room.name == self.prev.name:
-                dotproc.stdin.write("""        "%(name)s" [shape=octagon color=grey fontsize=10 URL="goto/%(name)s"]\n""" % {"name": room.name})
+                dotproc.stdin.write("""        "%(name)s" [shape=octagon color=grey fontsize=10 URL="goto/%(name)s" pos="0.0,-0.001"]\n""" % {"name": room.name})
             
             for other in room.doors:
                 if other.name < room.name and other in crawl:

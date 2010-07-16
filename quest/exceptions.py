@@ -1,0 +1,1 @@
+class DoorLockedException(Exception): pass

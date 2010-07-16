@@ -5,6 +5,7 @@ from subprocess import Popen, PIPE
 from nagare import presentation, component, state, var
 from quest.models import Room, Door, WordCard
 from quest.monster import *
+from quest.exceptions import *
 from sqlalchemy.sql.functions import random
 import pkg_resources
 import re
@@ -167,7 +168,7 @@ class RoomDisplay(object):
         
         try:
             self.gs.enterRoom(nextroom)
-        except Exception, e:
+        except DoorLockedException, e:
             success = binding.call(UnlockChallenge())
             if success:
                 print "yay"

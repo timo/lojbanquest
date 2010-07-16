@@ -5,14 +5,13 @@ from nagare.namespaces import xhtml
 from nagare.database import session
 
 from quest.models import Player as PlayerModel, Room, WordCard, BagEntry
+from quest.exceptions import *
 import random
 
 # gather models
 from quest.roomdisplay import RoomDisplay
 from quest.monster import Monster, Monsters
 from quest.questlogin import QuestLogin
-
-class DoorLockedException(Exception): pass
 
 class GameSession(object):
     def __init__(self):

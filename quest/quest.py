@@ -6,6 +6,7 @@ from nagare.database import session
 
 from quest.models import Player as PlayerModel, Room, WordCard, BagEntry
 from quest.exceptions import *
+from quest.eventlog import Log, send_to
 import random
 
 # gather models
@@ -25,6 +26,8 @@ class GameSession(object):
         self.playerBox = component.Component(Player(self.player, self))
         self.roomDisplay = component.Component(RoomDisplay(self.player.position, self))
         self.spellInput = component.Component(SpellInput(self))
+
+        self.eventlog = component.Component(Log(self))
 
         self.model("game")
 
@@ -54,7 +57,9 @@ class GameSession(object):
         if door.lockable() and not force:
             door.locked = True # TODO: delay this by a few seconds, so that party members can come along?
 
+        send_to(self.player.position, "%s left" % (self.player.username))
         self.player.position = newposition
+        send_to(self.player.position, "%s entered" % (self.player.username))
 
 class Wordbag(object):
     """This class holds the words that the player posesses."""
@@ -171,6 +176,7 @@ def render(self, h, *args):
         h << self.playerBox.render(xhtml.AsyncRenderer(h), model="wordbag")
         h << self.spellInput.render(h)
         h << self.roomDisplay
+        h << self.eventlog
         h << h.div(self.roomDisplay.render(h, model="map"), style="position:absolute; right: 0; top: 0;")
     return h.root
 

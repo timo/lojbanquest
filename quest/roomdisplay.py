@@ -229,6 +229,10 @@ def roomdisplay_render(self, h, binding, *args):
             if self.room != self.prev:
                 h << h.li("Back: ", door(self.room, self.prev))
 
+    with h.ul(id="players"):
+        for player in self.room.players:
+            h << h.li(player.username, id="player_" + player.username)
+
     return h.root
 
 gotorex = re.compile("goto/([^\"]+)")

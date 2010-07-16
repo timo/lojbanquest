@@ -117,7 +117,7 @@ class Player(Base):
     login     = Column(DateTime)
 
     position_name = Column(Unicode(6), ForeignKey("Room.name"))
-    position  = relationship(Room)
+    position  = relationship(Room, backref="players")
     
     health    = Column(Integer, default=1000)
     maxHealth = Column(Integer, default=1000)

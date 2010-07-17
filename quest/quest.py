@@ -1,19 +1,16 @@
 from __future__ import with_statement, absolute_import
 
 from nagare import presentation, component, state, var
-from nagare.namespaces import xhtml
 from nagare.database import session
+from nagare.namespaces import xhtml
 
-from quest.models import Player as PlayerModel, Room, WordCard, BagEntry
-from quest.exceptions import *
 from quest.eventlog import Log, send_to
-import random
-
-# gather models
-from quest.roomdisplay import RoomDisplay
-from quest.monster import Monster, Monsters
+from quest.exceptions import *
+from quest.models import Player as PlayerModel, Room, WordCard, BagEntry
 from quest.questlogin import QuestLogin
+from quest.roomdisplay import RoomDisplay
 from quest.template import template
+
 
 class GameSession(object):
     def __init__(self):

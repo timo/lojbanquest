@@ -1,5 +1,5 @@
-from nagare import presentation, component, state, var
-import models
+from nagare import presentation
+
 
 class Monster(object):
     def __init__(self, gs):

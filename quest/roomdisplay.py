@@ -1,19 +1,18 @@
 from __future__ import absolute_import
 
-import os
-from subprocess import Popen, PIPE
-from nagare import presentation, component, state, var
-from quest.models import Room, Door, WordCard
-from quest.monster import *
-from quest.exceptions import *
-from sqlalchemy.sql.functions import random
-import pkg_resources
 import re
 from random import shuffle
+from subprocess import Popen, PIPE
 
-from sqlalchemy.sql.expression import and_, or_
-
+import pkg_resources
 from elixir import session
+from nagare import presentation, component
+from sqlalchemy.sql.functions import random
+
+from quest.exceptions import *
+from quest.models import Room, WordCard
+from quest.monster import *
+
 
 class RoomDisplay(object):
     """This class encapsulates many Components that build up the GUI that

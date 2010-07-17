@@ -1,10 +1,12 @@
-from sqlalchemy import MetaData, Column, Unicode, Float, Boolean, ForeignKey, UnicodeText, Integer, DateTime
-from sqlalchemy.orm import relationship, aliased
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.sql.expression import or_, and_
-from sqlalchemy.orm.session import Session
 import datetime
+
 from elixir import *
+from sqlalchemy import Column, Unicode, Float, Boolean, ForeignKey, UnicodeText, Integer, DateTime
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import relationship, aliased
+from sqlalchemy.orm.session import Session
+from sqlalchemy.sql.expression import or_
+
 
 Base = declarative_base()
 __metadata__ = Base.metadata

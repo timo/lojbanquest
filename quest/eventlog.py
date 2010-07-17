@@ -1,7 +1,9 @@
 from __future__ import absolute_import, with_statement
 
-from nagare import presentation, component, var, comet, ajax
+from nagare import presentation, component, comet, ajax
+
 from quest.models import Room, Player
+
 
 def send_to(target, message):
     if isinstance(target, Room):

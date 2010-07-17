@@ -1,18 +1,16 @@
 from __future__ import with_statement, absolute_import
 
 from nagare import presentation, component, state, var
-from nagare.namespaces import xhtml
 from nagare.database import session
+from nagare.namespaces import xhtml
 
-from quest.models import Player as PlayerModel, Room, WordCard, BagEntry
-from quest.exceptions import *
 from quest.eventlog import Log, send_to
-import random
-
-# gather models
-from quest.roomdisplay import RoomDisplay
-from quest.monster import Monster, Monsters
+from quest.exceptions import *
+from quest.models import Player as PlayerModel, Room, WordCard, BagEntry
 from quest.questlogin import QuestLogin
+from quest.roomdisplay import RoomDisplay
+from quest.template import template
+
 
 class GameSession(object):
     def __init__(self):
@@ -140,45 +138,54 @@ class Player(object):
 
 @presentation.render_for(Player)
 def player_render(self, h, binding, *args):
-    with h.div(class_ = "playerbox"):
-        h << h.h1(self.o.username)
-        with h.span():
-           h << "You currently have "
-           h << h.span(self.o.health, id="hp")
-           h << " health points."
+    tmpl = template("playerbox", h, True)[0]
+
+    tmpl.findmeld("playername").fill(self.o.username)
+    tmpl.findmeld("hp").fill(self.o.health)
+
+    h << tmpl
 
     return h.root
 
 @presentation.render_for(Player, model="wordbag")
 def wordbag_render(self, h, binding, *args):
+    tmpl = template("wordbag", h, True)[0]
+
     if len(self.wordbag.words) > 0:
-        with h.div(class_="wordbag"):
-            h << {"style": "column-count:5; -moz-column-count:5; -webkit-column-count:5; position:absolute; bottom: 5px; left: 5px; right: 5px; height: auto" }
-            with h.ul():
-                for wo, ct in self.wordbag.words.iteritems():
-                    with h.li():
-                        h << h.span(ct, class_="count")
-                        h << h.a(" " + wo.word)
+        for (elem, (wo, ct)) in tmpl.findmeld("entry").repeat(self.wordbag.words.iteritems()):
+            elem[0].fill(str(ct))
+            elem[1].fill(wo.word)
+
+        tmpl.remove(tmpl.findmeld("error"))
     else:
-        with h.div(class_="wordbag"):
-            h << "Woops. No words :("
+        tmpl.remove(tmpl.findmeld("words"))
     
+    h << tmpl
+
     return h.root
 
 
 @presentation.render_for(GameSession)
 def render(self, h, *args):
-    h.head << h.head.title("LojbanQuest draft")
+    tmpl = template("main", h)
+
     if self.model() == "login":
-        h << self.loginManager
+        cdiv = h.div(id="content")
+        with cdiv:
+            h << self.loginManager
     elif self.model() == "game":
-        h << h.h1("Welcome to LojbanQuest!")
-        h << self.playerBox
-        h << self.playerBox.render(xhtml.AsyncRenderer(h), model="wordbag")
-        h << self.spellInput.render(h)
-        h << self.roomDisplay
-        h << self.eventlog
-        h << h.div(self.roomDisplay.render(h, model="map"), style="position:absolute; right: 0; top: 0;")
+        cdiv = h.div(id="content")
+        with cdiv:
+            h << self.playerBox
+            h << self.playerBox.render(xhtml.AsyncRenderer(h), model="wordbag")
+            h << self.spellInput.render(h)
+            h << self.roomDisplay
+            h << self.eventlog
+            h << h.div(self.roomDisplay.render(h, model="map"), style="position:absolute; right: 0; top: 0;")
+
+    tmpl.findmeld("content").replace(cdiv)
+
+    h << tmpl
     return h.root
 
 

@@ -2,6 +2,7 @@ from __future__ import absolute_import
 
 from pkg_resources import resource_string, resource_filename
 
+
 __vowel_cycle = list("aeioua")
 __conso_cycle = list("bcdfgjklmnprstvxzb")
 

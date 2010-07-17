@@ -6,6 +6,7 @@ from quest.models import Player, Room, WordCard, BagEntry
 from random import shuffle, randint
 
 import hashlib
+from datetime import datetime
 
 class QuestLogin(object):
     def __init__(self):
@@ -25,6 +26,8 @@ class QuestLogin(object):
         elif po.password != pwd:
             self.message("Login failed.")
         else:
+            po.status = 1 # login the player
+            po.login = datetime.now()
             binding.answer(username())
 
     def register(self, username, password, binding):

@@ -1,5 +1,7 @@
 from __future__ import with_statement, absolute_import
 
+from pkg_resources import resource_string
+
 from nagare import presentation, component, state, var
 from nagare.namespaces import xhtml
 from nagare.database import session
@@ -167,17 +169,25 @@ def wordbag_render(self, h, binding, *args):
 
 @presentation.render_for(GameSession)
 def render(self, h, *args):
-    h.head << h.head.title("LojbanQuest draft")
+    tmpl = h.parse_htmlstring(resource_string("quest", "../templates/main.xhtml"), xhtml=True)
+
     if self.model() == "login":
-        h << self.loginManager
+        cdiv = h.div(id="content")
+        with cdiv:
+            h << self.loginManager
     elif self.model() == "game":
-        h << h.h1("Welcome to LojbanQuest!")
-        h << self.playerBox
-        h << self.playerBox.render(xhtml.AsyncRenderer(h), model="wordbag")
-        h << self.spellInput.render(h)
-        h << self.roomDisplay
-        h << self.eventlog
-        h << h.div(self.roomDisplay.render(h, model="map"), style="position:absolute; right: 0; top: 0;")
+        cdiv = h.div(id="content")
+        with cdiv:
+            h << self.playerBox
+            h << self.playerBox.render(xhtml.AsyncRenderer(h), model="wordbag")
+            h << self.spellInput.render(h)
+            h << self.roomDisplay
+            h << self.eventlog
+            h << h.div(self.roomDisplay.render(h, model="map"), style="position:absolute; right: 0; top: 0;")
+
+    tmpl.findmeld("content").replace(cdiv)
+
+    h << tmpl
     return h.root
 
 

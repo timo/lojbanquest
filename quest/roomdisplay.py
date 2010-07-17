@@ -159,7 +159,7 @@ class RoomDisplay(object):
             prevroom = self.room
         except:
             prevroom = room
-        if isinstance(room, models.Room):
+        if isinstance(room, Room):
             nextroom = room
         else:
             nextroom = session.query(Room).get(room)

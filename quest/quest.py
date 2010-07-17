@@ -140,12 +140,12 @@ class Player(object):
 
 @presentation.render_for(Player)
 def player_render(self, h, binding, *args):
-    with h.div(class_ = "playerbox"):
-        h << h.h1(self.o.username)
-        with h.span():
-           h << "You currently have "
-           h << h.span(self.o.health, id="hp")
-           h << " health points."
+    tmpl = template("playerbox", h, True)[0]
+
+    tmpl.findmeld("playername").fill(self.o.username)
+    tmpl.findmeld("hp").fill(self.o.health)
+
+    h << tmpl
 
     return h.root
 

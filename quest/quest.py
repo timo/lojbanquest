@@ -44,6 +44,7 @@ class GameSession(object):
         # when we start the game, we have no old position.
         if oldpos == newposition:
             print "ignoring GameSession.enterRoom."
+            send_to(self.player.position, "%s entered" % (self.player.username))
             return
 
         # find the door object. if it's locked, don't let us through, if it's lockable, shut it behind us.

@@ -5,15 +5,24 @@ from elixir import *
 from quest.models import Player, Room, WordCard, BagEntry
 from random import shuffle, randint
 
+import hashlib
+
 class QuestLogin(object):
     def __init__(self):
         self.message = state.stateless(var.Var(""))
 
     def login(self, username, password, binding):
         po = session.query(Player).get(username())
+        
+        shao = hashlib.sha1()
+        shao.update(password())
+        pwd = shao.hexdigest()
+        del shao
+        
         if not po:
             self.message("No such user. Try registering instead.")
-        elif po.password != password():
+            
+        elif po.password != pwd:
             self.message("Login failed.")
         else:
             binding.answer(username())
@@ -24,8 +33,13 @@ class QuestLogin(object):
             self.message("A player with that username already exists.")
             return
 
+        shao = hashlib.sha1()
+        shao.update(password())
+        pwd = shao.hexdigest()
+        del shao
+
         # create the player object
-        np = Player(username = username(), password = password())
+        np = Player(username = username(), password = pwd)
         np.position = session.query(Room).get(u"pensi")
         session.add(np)
 
@@ -53,7 +67,7 @@ class QuestLogin(object):
 
         session.add(np)
         session.flush()
-        self.login(username, password, binding)
+        self.login(username, pwd, binding)
 
 @presentation.render_for(QuestLogin)
 def login_form(self, h, binding, *args):

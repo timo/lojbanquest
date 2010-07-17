@@ -239,7 +239,7 @@ def render_map(self, h, binding, *args):
 
     mapstr = self.get_map_map()
 
-    mapobj = h.parse_htmlstring(mapstr)
+    mapobj = h.parse_htmlstring(mapstr, fragment=True)[0]
 
     for area in mapobj.xpath("//area"):
         roomname = unicode(area.get("href").split("/")[1].replace("&#39;", "'"))

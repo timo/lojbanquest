@@ -221,7 +221,7 @@ def populate_valsi():
         try:
             defi = unicode(defire.match(valsi[62:159]).group(1)).strip()
         except:
-            defi = unicode(valsi[62:195]).strip()
+            defi = unicode(valsi[62:159]).strip()
 
         rafsi = unicode(valsi[7:20]).strip()
 
@@ -236,6 +236,7 @@ def populate_valsi():
         wc.gloss = gloss
         wc.definition = defi
         wc.rafsi = rafsi
+        wc.rank = 50
 
         sm = None
         if smt:

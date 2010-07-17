@@ -15,7 +15,7 @@ class QuestLogin(object):
     def login(self, username, password, binding):
         po = session.query(Player).get(username())
         
-        shao = hashlib.sha1()
+        shao = hashlib.sha256()
         shao.update(password())
         pwd = shao.hexdigest()
         del shao
@@ -36,7 +36,7 @@ class QuestLogin(object):
             self.message("A player with that username already exists.")
             return
 
-        shao = hashlib.sha1()
+        shao = hashlib.sha256()
         shao.update(password())
         pwd = shao.hexdigest()
         del shao

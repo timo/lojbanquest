@@ -115,7 +115,7 @@ class Player(Base):
     __tablename__ = "player"
 
     username  = Column(Unicode(16), primary_key=True)
-    password  = Column(Unicode(40)) # sha1sum of the password
+    password  = Column(Unicode(64)) # sha256 of the password
     
     join_date = Column(DateTime, default=datetime.datetime.now)
 

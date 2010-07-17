@@ -1,7 +1,7 @@
 from sqlalchemy import MetaData, Column, Unicode, Float, Boolean, ForeignKey, UnicodeText, Integer, DateTime
 from sqlalchemy.orm import relationship, aliased
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.sql.expression import or_
+from sqlalchemy.sql.expression import or_, and_
 from sqlalchemy.orm.session import Session
 import datetime
 from elixir import *
@@ -53,6 +53,12 @@ class Room(Base):
             .filter(Room2.name != Room.name)\
             .filter(Room.name == self.name)\
             .all()
+
+    @property
+    def players(self):
+        session = Session.object_session(self)
+        players = session.query(Player).filter(Player.position == self).filter(Player.status > 0).all()
+        return players
 
     doorobjs  = relationship("Door",
                              primaryjoin=or_(name == Door.room_a_id, name == Door.room_b_id),
@@ -117,7 +123,7 @@ class Player(Base):
     login     = Column(DateTime)
 
     position_name = Column(Unicode(6), ForeignKey("Room.name"))
-    position  = relationship(Room, backref="players")
+    position  = relationship(Room)
     
     health    = Column(Integer, default=1000)
     maxHealth = Column(Integer, default=1000)

@@ -144,7 +144,7 @@ class Monster(Base):
     health = Column(Integer, default = 100)
 
     position_name = Column(Unicode(6), ForeignKey("Room.name"))
-    position = relationship(Room)
+    position = relationship(Room, backref="monsters")
 
 ### things for the treasure chest game and combat
 

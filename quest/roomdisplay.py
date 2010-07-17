@@ -156,7 +156,6 @@ class RoomDisplay(object):
         return mapdata
 
     def enterRoom(self, room, binding = None):
-        print "RoomDisplay.enterRoom %r" % (room,)
         try:
             prevroom = self.room
         except:
@@ -183,8 +182,6 @@ class RoomDisplay(object):
         # TODO: just update the previous monsters component instead.
         self.monsters = component.Component(Monsters(self.gs))
         self.monsters.o.addMonster(component.Component(Monster(self.gs)))
-
-        print "entered room", self.room
 
 class UnlockChallenge(object):
     def __init__(self):
@@ -224,7 +221,6 @@ def roomdisplay_render(self, h, binding, *args):
     with h.div():
         h << "Doors:"
         with h.ul():
-            print "self.room:", self.room, "self.room.doors:", self.room.doors
             h << (h.li(door(self.room, other)) for other in self.room.doors if other != self.prev)
             if self.room != self.prev:
                 h << h.li("Back: ", door(self.room, self.prev))

@@ -10,14 +10,17 @@ from datetime import datetime
 
 class QuestLogin(object):
     def __init__(self):
-        self.message = state.stateless(var.Var(""))
+        self.message = var.Var("")
+        state.stateless(self.message)
+        self.un = var.Var()
+        self.pwd = var.Var()
 
-    def login(self, username, password, binding):
-        po = session.query(Player).get(username())
+    def login(self, binding):
+        po = session.query(Player).get(self.un())
         
         shao = hashlib.sha256()
-        shao.update(password())
-        pwd = shao.hexdigest()
+        shao.update(self.pwd())
+        pwd = unicode(shao.hexdigest())
         del shao
         
         if not po:
@@ -28,21 +31,21 @@ class QuestLogin(object):
         else:
             po.status = 1 # login the player
             po.login = datetime.now()
-            binding.answer(username())
+            binding.answer(self.un())
 
-    def register(self, username, password, binding):
+    def register(self, binding):
         # see if there are duplicate players.
-        if session.query(Player).get(username()):
+        if session.query(Player).get(self.un()):
             self.message("A player with that username already exists.")
             return
 
         shao = hashlib.sha256()
-        shao.update(password())
+        shao.update(self.pwd())
         pwd = shao.hexdigest()
         del shao
 
         # create the player object
-        np = Player(username = username(), password = pwd)
+        np = Player(username = self.un(), password = pwd)
         np.position = session.query(Room).get(u"pensi")
         session.add(np)
 
@@ -70,18 +73,16 @@ class QuestLogin(object):
 
         session.add(np)
         session.flush()
-        self.login(username, pwd, binding)
+        self.login(binding)
 
 @presentation.render_for(QuestLogin)
 def login_form(self, h, binding, *args):
-    un = var.Var()
-    pwd = var.Var()
     return h.form("Please sign in with your username and password or register a new account.",
                   h.br(),
                   self.message(),
                   h.br(),
-                  h.input.action(un),
-                  h.input.action(pwd),
-                  h.input(type="submit", value="login").action(lambda: self.login(un, pwd, binding)),
-                  h.input(type="submit", value="register").action(lambda: self.register(un, pwd, binding))
+                  h.input.action(self.un),
+                  h.input.action(self.pwd),
+                  h.input(type="submit", value="login").action(lambda: self.login(binding)),
+                  h.input(type="submit", value="register").action(lambda: self.register(binding))
                   )

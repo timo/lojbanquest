@@ -1,7 +1,5 @@
 from __future__ import with_statement, absolute_import
 
-from pkg_resources import resource_string
-
 from nagare import presentation, component, state, var
 from nagare.namespaces import xhtml
 from nagare.database import session
@@ -15,6 +13,7 @@ import random
 from quest.roomdisplay import RoomDisplay
 from quest.monster import Monster, Monsters
 from quest.questlogin import QuestLogin
+from quest.template import template
 
 class GameSession(object):
     def __init__(self):
@@ -169,7 +168,7 @@ def wordbag_render(self, h, binding, *args):
 
 @presentation.render_for(GameSession)
 def render(self, h, *args):
-    tmpl = h.parse_htmlstring(resource_string("quest", "../templates/main.xhtml"), xhtml=True)
+    tmpl = template("main", h)
 
     if self.model() == "login":
         cdiv = h.div(id="content")

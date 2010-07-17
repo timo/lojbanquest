@@ -151,18 +151,19 @@ def player_render(self, h, binding, *args):
 
 @presentation.render_for(Player, model="wordbag")
 def wordbag_render(self, h, binding, *args):
+    tmpl = template("wordbag", h, True)[0]
+
     if len(self.wordbag.words) > 0:
-        with h.div(class_="wordbag"):
-            h << {"style": "column-count:5; -moz-column-count:5; -webkit-column-count:5; position:absolute; bottom: 5px; left: 5px; right: 5px; height: auto" }
-            with h.ul():
-                for wo, ct in self.wordbag.words.iteritems():
-                    with h.li():
-                        h << h.span(ct, class_="count")
-                        h << h.a(" " + wo.word)
+        for (elem, (wo, ct)) in tmpl.findmeld("entry").repeat(self.wordbag.words.iteritems()):
+            elem[0].fill(str(ct))
+            elem[1].fill(wo.word)
+
+        tmpl.remove(tmpl.findmeld("error"))
     else:
-        with h.div(class_="wordbag"):
-            h << "Woops. No words :("
+        tmpl.remove(tmpl.findmeld("words"))
     
+    h << tmpl
+
     return h.root
 
 

@@ -48,13 +48,7 @@ class Room(Base):
 
     @property
     def doors(self):
-        session = Session.object_session(self)
-        Room2 = aliased(Room)
-        return session.query(Room2)\
-            .join(Room2.doorobjs, (Room, or_(Door.room_a_id == Room.name, Door.room_b_id == Room.name)))\
-            .filter(Room2.name != Room.name)\
-            .filter(Room.name == self.name)\
-            .all()
+        return [obj.room_a if obj.room_b == self else obj.room_b for obj in self.doorobjs]
 
     @property
     def players(self):

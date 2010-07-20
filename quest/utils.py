@@ -325,8 +325,9 @@ def connect_rooms():
 
     for theroom in session.query(Room).order_by(Room.name):
         num += 1
+       
         
-        rafsi = session.query(WordCard.rafsi).get(theroom.name)[0].split()
+        rafsi = session.query(WordCard.rafsi).get(theroom.name).rafsi.split()
         
         if num % 10 == 0: # only every 10th one.
             print "\r(% 5i/% 5i) %s - %s                          " % (num, count, theroom.name, rafsi),
@@ -527,7 +528,7 @@ def populate_db():
         while maxsize < 70:
             room = randrms.next()
             if len(room.name) == 5:
-                city = find_city(room.name)
+                city = find_city(room)
                 if len(city) > 15 and len(city) < 200:
                     cities.append((room.name, city))
                     if len(city) > maxsize:
@@ -575,7 +576,9 @@ def random_rooms():
 
 class CityCrawler(object):
     def __init__(self, startroom):
-        self.visitedrooms = [session.query(Room).get(startroom)]
+        if isinstance(startroom, basestring):
+            startroom = session.query(Room).get(startroom)
+        self.visitedrooms = [startroom]
 
     def crawl(self):
         self.step_one()
@@ -595,7 +598,7 @@ class CityCrawler(object):
 
     def follow_corridors(self):
         for room in self.visitedrooms:
-            if len(room.doors) == 1:
+            if len(room.doors) == 2:
                 if room.doors[0] not in self.visitedrooms:
                     self.visitedrooms.append(room.doors[0])
 

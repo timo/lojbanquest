@@ -155,6 +155,8 @@ def wordbag_render(self, h, binding, *args):
         for (elem, (wo, ct)) in tmpl.findmeld("entry").repeat(self.wordbag.words.iteritems()):
             elem[0].fill(str(ct))
             elem[1].fill(wo.word)
+            #elem.findmeld("count").fill(str(ct))
+            #elem.findmeld("word").fill(wo.word)
 
         tmpl.remove(tmpl.findmeld("error"))
     else:

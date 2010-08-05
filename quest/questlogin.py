@@ -40,7 +40,7 @@ class QuestLogin(object):
             binding.answer(self.un())
 
     def admin(self, comp):
-        comb = list(string.ascii_letters + string.digits + string.punctuation)
+        comb = list(string.ascii_letters + string.digits)
         shuffle(comb)
         pwd = "".join(comb[:10])
         print "admin password: ", pwd

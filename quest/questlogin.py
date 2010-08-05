@@ -1,14 +1,17 @@
 from __future__ import absolute_import
 
 import hashlib
+import string
 from datetime import datetime
 from random import shuffle, randint
 
 from elixir import *
-from nagare import presentation, var, state
+from nagare import presentation, var, state, util
 
 from quest.models import Player, Room, WordCard, BagEntry
 from quest.cron import login_event
+
+class AdminLogin: pass
 
 class QuestLogin(object):
     def __init__(self):
@@ -35,6 +38,16 @@ class QuestLogin(object):
             po.status = 1 # login the player
             po.login = datetime.now()
             binding.answer(self.un())
+
+    def admin(self, comp):
+        comb = list(string.ascii_letters + string.digits + string.punctuation)
+        shuffle(comb)
+        pwd = "".join(comb[:10])
+        print "admin password: ", pwd
+        if pwd == comp.call(util.Ask("Admin Password?")):
+            comp.answer(AdminLogin())
+        else:
+            comp.call(util.Confirm("Wrong password."))
 
     def register(self, binding):
         # see if there are duplicate players.
@@ -80,7 +93,7 @@ class QuestLogin(object):
 
 @presentation.render_for(QuestLogin)
 def login_form(self, h, binding, *args):
-    return h.form("Please sign in with your username and password or register a new account.",
+    h << h.form("Please sign in with your username and password or register a new account.",
                   h.br(),
                   self.message(),
                   h.br(),
@@ -89,3 +102,6 @@ def login_form(self, h, binding, *args):
                   h.input(type="submit", value="login").action(lambda: self.login(binding)),
                   h.input(type="submit", value="register").action(lambda: self.register(binding))
                   )
+    h << h.a("admin interface").action(lambda: (self.admin(binding)))
+    
+    return h.root

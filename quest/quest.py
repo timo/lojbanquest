@@ -7,7 +7,7 @@ from nagare.namespaces import xhtml
 from quest.eventlog import Log, send_to
 from quest.exceptions import *
 from quest.models import Player as PlayerModel, Room, WordCard, BagEntry
-from quest.questlogin import QuestLogin
+from quest.questlogin import QuestLogin, AdminLogin
 from quest.roomdisplay import RoomDisplay
 from quest.template import template
 
@@ -19,6 +19,11 @@ class GameSession(object):
         self.model = state.stateless(var.Var("login"))
 
     def startGame(self, player):
+        if isinstance(player, AdminLogin):
+            del self.loginManager
+            self.model("admin")
+            return
+
         self.player =  session.query(PlayerModel).get(player)
 
         self.playerBox = component.Component(Player(self.player, self))
@@ -171,19 +176,20 @@ def wordbag_render(self, h, binding, *args):
 def render(self, h, *args):
     tmpl = template("main", h)
 
-    if self.model() == "login":
-        cdiv = h.div(id="content")
-        with cdiv:
-            h << self.loginManager
-    elif self.model() == "game":
-        cdiv = h.div(id="content")
-        with cdiv:
+    cdiv = h.div(id="content")
+    with cdiv:
+        if self.model() == "login":
+                h << self.loginManager
+        elif self.model() == "game":
             h << self.playerBox
             h << self.playerBox.render(xhtml.AsyncRenderer(h), model="wordbag")
             h << self.spellInput.render(h)
             h << self.roomDisplay
             h << self.eventlog
             h << h.div(self.roomDisplay.render(h, model="map"), style="position:absolute; right: 0; top: 0;")
+        elif self.model() == "admin":
+            h << "yay, admin!"
+
 
     tmpl.findmeld("content").replace(cdiv)
 

@@ -1,9 +1,17 @@
 from __future__ import absolute_import, with_statement
 
 from nagare import presentation, component, comet, ajax
+from nagare.database import session
 
 from quest.models import Room, Player
 
+def poke(target):
+    try:
+        comet.channels.send(target, "poke")
+    except Exception, e:
+        print "poke %s failed with %r" % (target, e)
+        return False
+    return True
 
 def send_to(target, message):
     if isinstance(target, Room):
@@ -37,6 +45,9 @@ def send_to(target, message):
 
 @ajax.javascript
 def append(msg):
+    if msg == "poke":
+        return
+
     li = document.createElement('li')
     li.appendChild(document.createTextNode(msg))
 

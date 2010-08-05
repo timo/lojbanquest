@@ -8,7 +8,7 @@ from elixir import *
 from nagare import presentation, var, state
 
 from quest.models import Player, Room, WordCard, BagEntry
-
+from quest.cron import login_event
 
 class QuestLogin(object):
     def __init__(self):
@@ -31,6 +31,7 @@ class QuestLogin(object):
         elif po.password != pwd:
             self.message("Login failed.")
         else:
+            login_event.set()
             po.status = 1 # login the player
             po.login = datetime.now()
             binding.answer(self.un())

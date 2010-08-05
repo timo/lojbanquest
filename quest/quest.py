@@ -9,6 +9,7 @@ from quest.exceptions import *
 from quest.models import Player as PlayerModel, Room, WordCard, BagEntry
 from quest.questlogin import QuestLogin, AdminLogin
 from quest.roomdisplay import RoomDisplay
+from quest.admin import AdminPanel
 from quest.template import template
 
 
@@ -21,6 +22,7 @@ class GameSession(object):
     def startGame(self, player):
         if isinstance(player, AdminLogin):
             del self.loginManager
+            self.adminpanel = component.Component(AdminPanel())
             self.model("admin")
             return
 
@@ -188,7 +190,7 @@ def render(self, h, *args):
             h << self.eventlog
             h << h.div(self.roomDisplay.render(h, model="map"), style="position:absolute; right: 0; top: 0;")
         elif self.model() == "admin":
-            h << "yay, admin!"
+            h << self.adminpanel
 
 
     tmpl.findmeld("content").replace(cdiv)

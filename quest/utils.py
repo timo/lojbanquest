@@ -443,6 +443,8 @@ def cut_doors(maxdoornum):
                     door = theroom.doorTo(k)
                     if door:
                         session.delete(door)
+                    # make sure we don't get a ConcurrentModificationError.
+                    session.expire(k)
     
     print "killed %d connections in total." % killedcount
 

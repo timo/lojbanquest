@@ -10,10 +10,12 @@ from quest.models import Player as PlayerModel, Room, WordCard, BagEntry
 from quest.questlogin import QuestLogin
 from quest.roomdisplay import RoomDisplay
 from quest.template import template
+from quest.cron import start_osw
 
 
 class GameSession(object):
     def __init__(self):
+        start_osw()
         self.loginManager = component.Component(QuestLogin())
         self.loginManager.on_answer(self.startGame)
         self.model = state.stateless(var.Var("login"))

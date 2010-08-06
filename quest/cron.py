@@ -1,3 +1,5 @@
+from __future__ import with_statement
+
 import threading
 import time
 import models
@@ -6,6 +8,8 @@ import eventlog
 from nagare.database import session
 
 login_event = threading.Event()
+
+osw_lock = threading.Lock()
 
 class OfflineSenseWorker(threading.Thread):
     """This thread constantly runs and tries to poke the comet channels of
@@ -39,3 +43,11 @@ class OfflineSenseWorker(threading.Thread):
                 print "woken up by player login!"
                 login_event.clear()
             time.sleep(5)
+
+osw = None
+def start_osw():
+    global osw
+    with osw_lock:
+        if not osw:
+            osw = OfflineSenseWorker()
+            osw.start()

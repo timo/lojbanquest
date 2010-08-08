@@ -43,7 +43,7 @@ class GameSession(object):
         del self.eventlog
 
         self.loginManager = component.Component(QuestLogin())
-        self.login_manager.on_answer(self.startGame)
+        self.loginManager.on_answer(self.startGame)
         self.model("login")
 
     def enterRoom(self, room, force = False):

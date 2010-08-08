@@ -133,8 +133,13 @@ class Player(Base):
     bag       = relationship(WordCard, secondary=BagEntry.__table__,
                              primaryjoin = username == BagEntry.player_name)
 
+    lastact   = Column(DateTime, default=datetime.datetime.now)
+
     def __repr__(self):
         return u'<Player "%s" (%sline) in room "%s">' % (self.username, u"On" if self.status == 1 else u"Off", self.position.name)
+
+    def activity(self):
+        self.lastact = datetime.datetime.now()
 
 class Monster(Base):
     __tablename__ = "monster"

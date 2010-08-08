@@ -9,6 +9,7 @@ from datetime import datetime, timedelta
 from nagare.database import session
 
 login_event = threading.Event()
+stop_osw_event = threading.Event()
 
 osw_lock = threading.Lock()
 
@@ -24,7 +25,7 @@ class OfflineSenseWorker(threading.Thread):
         time.sleep(5)
 
         wtime = 300
-        while True:
+        while not stop_osw_event.isSet():
             numonline = 0
             for plr in session.query(models.Player).filter(models.Player.status > 0).all():
                 if not eventlog.poke(plr.username):
@@ -53,8 +54,15 @@ class OfflineSenseWorker(threading.Thread):
 osw = None
 def start_osw():
     global osw
+    if stop_osw_event.isSet():
+        osw = None
+    stop_osw_event.clear()
     with osw_lock:
         if not osw:
             osw = OfflineSenseWorker()
             osw.daemon = True
             osw.start()
+
+def stop_osw():
+    global osw
+    stop_osw_event.set()

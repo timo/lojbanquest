@@ -1,12 +1,12 @@
 #!/usr/bin/python
 import sys, os
 from pysqlite2 import dbapi2 as sqlite
-from subprocess import check_output, CalledProcessError
+from subprocess import Popen, PIPE
 import glob
 
 try:
-    db = sys.environ["dbpath"]
-except:
+    db = os.environ["dbpath"]
+except KeyError:
     db = "/home/timo/stackless/lojbanquest/data/quest.db"
 
 if sys.argv[1:]:
@@ -21,7 +21,7 @@ if sys.argv[1:]:
 
 # first, see if lojbanquest is online
 try:
-    ps_out = check_output(["ps", "a"])
+    ps_out = Popen(["ps", "a"], stdout=PIPE).communicate()[0]
 except CalledProcessError, e:
     print "could not call 'ps a':", e, repr(e)
     sys.exit(1)

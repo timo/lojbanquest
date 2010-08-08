@@ -35,3 +35,8 @@ You also need to make sure, that you have graphviz installed. It will be used to
 The next step is to install lojbanquest in it. Running setup.py develop will do that for you. You then need the files gismu.txt and cmavo.txt from the debian package lojban-common, big_list from http://www.digitalkingdom.org/~rlpowell/hobbies/lojban/ and put them in the data directory.
 
 Running nagare-admin create-db will create a database and fill it with a world. nagare-admin serve quest --host=0.0.0.0 -p 5000 will run a local server that others can connect to on http://yourmachine:5000/quest/. Register a user and have fun!
+
+Testing
+-------
+
+If you also want to run the test suite, you will need fixture and mox. To run them, I use nosetests, but it's probably also possible with test.py or something similar.

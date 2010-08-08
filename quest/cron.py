@@ -50,4 +50,5 @@ def start_osw():
     with osw_lock:
         if not osw:
             osw = OfflineSenseWorker()
+            osw.daemon = True
             osw.start()

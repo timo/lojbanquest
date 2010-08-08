@@ -76,8 +76,8 @@ def append(msg):
 messages = {}
 
 class Log(object):
-    def __init__(self, gs):
-        self.chanid = gs.player.username
+    def __init__(self, playername):
+        self.chanid = playername
         messages[self.chanid] = []
 
         comet.channels.create(self.chanid, append.name)

@@ -28,7 +28,7 @@ class GameSession(object):
         self.roomDisplay = component.Component(RoomDisplay(self.player.position, self))
         self.spellInput = component.Component(SpellInput(self))
 
-        self.eventlog = component.Component(Log(self))
+        self.eventlog = component.Component(Log(self.player.username))
 
         self.model("game")
 

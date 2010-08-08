@@ -1,6 +1,7 @@
 #!/usr/bin/python
 import sys, os
 from pysqlite2 import dbapi2 as sqlite
+from subprocess import check_output, CalledProcessError
 import glob
 
 try:
@@ -18,6 +19,14 @@ if sys.argv[1:]:
         print "online.label Playing"
         sys.exit(0)
 
+# first, see if lojbanquest is online
+try:
+    ps_out = check_output(["ps", "a"])
+except CalledProcessError, e:
+    print "could not call 'ps a':", e, repr(e)
+    sys.exit(1)
+lq_online = all(map(ps_out.__contains__, ["nagare-admin", "serve", "quest"]))
+
 c = sqlite.connect(db)
 cur = c.cursor()
 
@@ -27,5 +36,10 @@ numonline = c.execute("SELECT count() FROM Player WHERE status > 0").fetchone()[
 cur.close()
 c.close()
 
-print "players.value %i" % (numplayers,)
-print "online.value %i" % (numonline,)
+if lq_online:
+    print "players.value %i" % (numplayers,)
+    print "online.value %i" % (numonline,)
+else:
+    # show a gap for downtime
+    print "players.value U"
+    print "online.value U"

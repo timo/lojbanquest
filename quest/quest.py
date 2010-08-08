@@ -36,7 +36,7 @@ class GameSession(object):
 
     def logout(self):
         self.player.status = 0
-        send_to(self.player.position("%s left" % (self.player.username)))
+        send_to(self.player.position, "%s left" % (self.player.username))
         del self.playerBox
         del self.roomDisplay
         del self.spellInput
@@ -75,9 +75,9 @@ class GameSession(object):
         if door.lockable() and not force:
             door.locked = True # TODO: delay this by a few seconds, so that party members can come along?
 
-        send_to(self.player.position, "%s left" % (self.player.username))
-        self.player.position = newposition
-        send_to(self.player.position, "%s entered" % (self.player.username))
+        send_to(newposition, "%s entered" % (self.player.username))
+        oldpos, self.player.position = self.player.position, newposition
+        send_to(oldpos, "%s left" % (self.player.username))
         self.player.activity()
 
 class Wordbag(object):

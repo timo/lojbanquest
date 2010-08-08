@@ -22,6 +22,7 @@ class GameSession(object):
 
     def startGame(self, player):
         self.player =  session.query(PlayerModel).get(player)
+        self.player.activity()
 
         self.playerBox = component.Component(Player(self.player, self))
         self.roomDisplay = component.Component(RoomDisplay(self.player.position, self))
@@ -33,7 +34,23 @@ class GameSession(object):
 
         del self.loginManager
 
+    def logout(self):
+        self.player.status = 0
+        send_to(self.player.position("%s left" % (self.player.username)))
+        del self.playerBox
+        del self.roomDisplay
+        del self.spellInput
+        del self.eventlog
+
+        self.loginManager = component.Component(QuestLogin())
+        self.login_manager.on_answer(self.startGame)
+        self.model("login")
+
     def enterRoom(self, room, force = False):
+        if self.player.status == 0:
+            self.logout()
+            return
+
         oldpos = self.player.position
 
         if isinstance(room, Room):
@@ -61,6 +78,7 @@ class GameSession(object):
         send_to(self.player.position, "%s left" % (self.player.username))
         self.player.position = newposition
         send_to(self.player.position, "%s entered" % (self.player.username))
+        self.player.activity()
 
 class Wordbag(object):
     """This class holds the words that the player posesses."""
@@ -80,6 +98,9 @@ class SpellInput(object):
         self.errorcards = []
 
     def cast(self, text, target=None):
+        if self.gs.player.status == 0:
+            self.gs.logout()
+            return
         self.text(text)
         words = self.text().split()
 
@@ -121,6 +142,8 @@ class SpellInput(object):
         print score
         
         self.text("")
+
+        self.gs.player.activity()
 
 @presentation.render_for(SpellInput)
 def render_spellinput(self, h, binding, *args):

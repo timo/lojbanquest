@@ -4,6 +4,7 @@ import threading
 import time
 import models
 import eventlog
+from datetime import datetime, timedelta
 
 from nagare.database import session
 
@@ -32,7 +33,12 @@ class OfflineSenseWorker(threading.Thread):
                     plr.status = 0
                 else:
                     print "poked %s - still online" % (plr.username)
-                    numonline += 1
+                    if datetime.now() - plr.lastact > timedelta(minutes=10):
+                        plr.status = 0
+                        eventlog.send_to(plr.position("%s left" % (plr.username)))
+                        print "  but the last activity is too long ago. set to offline."
+                    else:
+                        numonline += 1
             if numonline > 0:
                 wtime = 300
             else:

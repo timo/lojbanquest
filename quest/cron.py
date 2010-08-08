@@ -35,7 +35,7 @@ class OfflineSenseWorker(threading.Thread):
                     print "poked %s - still online" % (plr.username)
                     if datetime.now() - plr.lastact > timedelta(minutes=10):
                         plr.status = 0
-                        eventlog.send_to(plr.position("%s left" % (plr.username)))
+                        eventlog.send_to(plr.position, "%s left" % (plr.username,))
                         print "  but the last activity is too long ago. set to offline."
                     else:
                         numonline += 1

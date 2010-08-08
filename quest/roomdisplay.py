@@ -5,8 +5,8 @@ from random import shuffle
 from subprocess import Popen, PIPE
 
 import pkg_resources
-from elixir import session
 from nagare import presentation, component
+from nagare.database import session
 from sqlalchemy.sql.functions import random
 
 from quest.exceptions import *
@@ -19,6 +19,8 @@ class RoomDisplay(object):
     the player uses to 'see' a room and status stuff."""
     def __init__(self, room, gs):
         self.gs = gs
+        if isinstance(room, basestring):
+            room = session.query(Room).get(room)
         self.prev = room
         self.room = room
         self.enterRoom(room)

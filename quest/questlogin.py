@@ -41,6 +41,15 @@ class QuestLogin(object):
         if session.query(Player).get(self.un()):
             self.message("A player with that username already exists.")
             return
+        elif len(self.un()) < 3:
+            self.message("Your nickname must not be shorter than 3 letters.")
+            return
+        elif len(self.un()) > 16:
+            self.message("Your nickname must not be longer than 16 letters.")
+            return
+        elif " " in self.un():
+            self.message("Your nickname must not contain spaces.")
+            return
 
         shao = hashlib.sha256()
         shao.update(self.pwd())
